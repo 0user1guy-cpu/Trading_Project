@@ -1,9 +1,8 @@
-<<<<<<< HEAD
 import base64
 import os
+
 import streamlit as st
 
-# Imports des modules
 from modules import analytics, home, market, market_data
 
 st.set_page_config(
@@ -12,23 +11,21 @@ st.set_page_config(
 
 # Initialisation de l'état de la page active
 if "active_page" not in st.session_state:
-  st.session_state["active_page"] = "Home"
+    st.session_state["active_page"] = "Home"
 
 # Encodage de l'image locale en Base64 pour Streamlit
 IMAGE_PATH = r"D:\Trading_Project\jpeg_ressources\lightning_arc.jpg"
 
 
 def get_base64_image(image_path):
-  if os.path.exists(image_path):
-    with open(image_path, "rb") as img_file:
-      return base64.b64encode(img_file.read()).decode("utf-8")
-  return ""
+    if os.path.exists(image_path):
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode("utf-8")
+    return ""
 
 
 img_base64 = get_base64_image(IMAGE_PATH)
-img_src = (
-    f"data:image/jpeg;base64,{img_base64}" if img_base64 else ""
-)
+img_src = f"data:image/jpeg;base64,{img_base64}" if img_base64 else ""
 
 # 1. Injection du CSS Global
 st.markdown(
@@ -234,43 +231,41 @@ cols = st.columns([0.7, 1.5, 1.6, 1.5, 1.7, 3.5, 2.7])
 
 # Logo Éclair avec l'image Base64
 with cols[0]:
-  if img_src:
-    st.markdown(
-        f"""
+    if img_src:
+        st.markdown(
+            f"""
             <div class="logo-container">
                 <img src="{img_src}" class="logo-lightning-img" alt="Lightning Logo">
             </div>
         """,
-        unsafe_allow_html=True,
-    )
-  else:
-    st.markdown(
-        """
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            """
             <div class="logo-container">
                 <svg viewBox="0 0 24 24" style="width: 32px; height: 32px; fill: #ffffff;">
                     <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
                 </svg>
             </div>
         """,
-        unsafe_allow_html=True,
-    )
+            unsafe_allow_html=True,
+        )
 
 # Onglets de navigation
 pages = ["Home", "Analytics", "Market", "Data Market"]
 for i, page in enumerate(pages):
-  with cols[i + 1]:
-    is_active = st.session_state["active_page"] == page
-    btn_type = "primary" if is_active else "secondary"
-    if st.button(
-        page, key=f"nav_{page}", type=btn_type, use_container_width=True
-    ):
-      st.session_state["active_page"] = page
-      st.rerun()
+    with cols[i + 1]:
+        is_active = st.session_state["active_page"] == page
+        btn_type = "primary" if is_active else "secondary"
+        if st.button(page, key=f"nav_{page}", type=btn_type, use_container_width=True):
+            st.session_state["active_page"] = page
+            st.rerun()
 
 # Bloc Droite
 with cols[6]:
-  st.markdown(
-      """
+    st.markdown(
+        """
         <div class="right-section-box">
             <div class="lang-btn">FR ▾</div>
             <div class="icon-bell">
@@ -282,152 +277,20 @@ with cols[6]:
             <div class="avatar-box"></div>
         </div>
     """,
-      unsafe_allow_html=True,
-  )
+        unsafe_allow_html=True,
+    )
 
 # 3. Zone de contenu
 st.markdown('<div class="content-area">', unsafe_allow_html=True)
 
 current = st.session_state["active_page"]
 if current == "Home":
-  home.show()
+    home.show()
 elif current == "Analytics":
-  analytics.show()
+    analytics.show()
 elif current == "Market":
-  market.show()
+    market.show()
 elif current == "Data Market":
-  market_data.show()
+    market_data.show()
 
 st.markdown("</div>", unsafe_allow_html=True)
-=======
-import sys
-from pathlib import Path
-import streamlit as st
-import streamlit_antd_components as sac
-
-root_dir = Path(__file__).resolve().parent
-if str(root_dir) not in sys.path:
-    sys.path.append(str(root_dir))
-
-import modules.home as home
-import modules.account as account
-import modules.analytics as analytics
-import modules.market as market
-import modules.market_data as market_data
-
-st.set_page_config(
-    page_title="CS2 Trade", 
-    page_icon="⚡", 
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
-
-# Style global, nettoyage des conteneurs internes et masquage du sidebar natif
-st.markdown("""<style>
-[data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"] {
-    display: none !important;
-}
-
-.stApp {
-    background-color: #0b0c10 !important;
-    background-image: 
-        radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.3) 1.2px, transparent 0),
-        linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px) !important;
-    background-size: 40px 40px, 40px 40px, 40px 40px !important;
-}
-
-.block-container {
-    padding-top: 1.2rem !important;
-    padding-left: 1rem !important;
-    padding-right: 1.5rem !important;
-    padding-bottom: 1rem !important;
-    max-width: 100% !important;
-}
-
-.header-logo-box {
-    position: fixed;
-    top: 14px;
-    left: 20px;
-    z-index: 999999;
-    width: 32px;
-    height: 32px;
-    background-color: #FFFFFF;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 15px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-}
-
-/* Grande boîte principale de navigation */
-div[data-testid="stColumn"]:first-child {
-    background: linear-gradient(165deg, rgba(255, 255, 255, 0.12) 0%, rgba(20, 22, 28, 0.85) 35%, rgba(10, 11, 15, 0.95) 100%);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 20px;
-    padding: 12px 8px !important;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-    margin-top: 45px !important;
-    height: auto !important;
-}
-
-/* Suppression de la boîte interne grise de streamlit-antd-components */
-.ant-menu {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-}
-
-.ant-menu-sub {
-    background: transparent !important;
-}
-
-/* Ajustement de la taille du texte et des espaces pour éviter les coupures */
-.ant-menu-title-content {
-    font-size: 14px !important;
-    white-space: nowrap !important;
-}
-
-.ant-menu-item, .ant-menu-submenu-title {
-    padding-left: 12px !important;
-    padding-right: 12px !important;
-}
-</style>
-<div class="header-logo-box">⚡</div>
-""", unsafe_allow_html=True)
-
-col_nav, col_content = st.columns([2.5, 9.5], gap="small")
-
-with col_nav:
-    selected_page = sac.menu(
-        items=[
-            sac.MenuItem('Home', icon='house'),
-            sac.MenuItem('Compte', icon='person', children=[
-                sac.MenuItem('Revenu', icon='currency-dollar'),
-                sac.MenuItem('Détail de vente', icon='file-earmark-text'),
-                sac.MenuItem('Sale History', icon='clock-history'),
-                sac.MenuItem('Notifications', icon='bell'),
-            ]),
-            sac.MenuItem('Analytics', icon='pie-chart'),
-            sac.MenuItem('Market', icon='cart'),
-            sac.MenuItem('Market Data', icon='bar-chart-line'),
-        ],
-        open_all=False,
-        size='md',
-        color='gray'
-    )
-
-with col_content:
-    if selected_page == 'Home':
-        home.show()
-    elif selected_page in ['Compte', 'Revenu', 'Détail de vente', 'Sale History', 'Notifications']:
-        account.show(selected_page)
-    elif selected_page == 'Analytics':
-        analytics.show()
-    elif selected_page == 'Market':
-        market.show()
-    elif selected_page == 'Market Data':
-        market_data.show()
->>>>>>> 7221e6040e5fcca2139fc15e786f8c849de26d33
