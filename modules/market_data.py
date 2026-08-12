@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import streamlit.components.v1 as components
 
 # URL d'export CSV direct depuis votre Google Sheets
 SHEET_ID = "1qrNxvPJOLIg4ZKV_fv3YzY7c95WXad_y8d99M7K4RLM"
@@ -166,4 +165,7 @@ def show():
     </html>
     """
 
-    components.html(full_table_html, height=1200, scrolling=True)
+    st.html(
+        f'<div style="max-height:1200px; overflow:auto; border-radius:16px;">{full_table_html}</div>',
+        unsafe_allow_javascript=True,
+    )

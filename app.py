@@ -14,7 +14,7 @@ if "active_page" not in st.session_state:
     st.session_state["active_page"] = "Home"
 
 # Encodage de l'image locale en Base64 pour Streamlit
-IMAGE_PATH = r"D:\Trading_Project\jpeg_ressources\lightning_arc.jpg"
+IMAGE_PATH = os.path.join(os.path.dirname(__file__), "jpeg_ressources", "lightning_arc.jpg")
 
 
 def get_base64_image(image_path):
