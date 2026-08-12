@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { CurrencyProvider } from './contexts/CurrencyContext'
 import Navbar from './components/Navbar'
 import CategoryBar from './components/CategoryBar'
 import FilterSidebar from './components/FilterSidebar'
@@ -33,26 +34,28 @@ export default function App() {
   }
 
   return (
-    <div className="app">
-      <Navbar currentPage={currentPage} onNavigate={handleNavigate} />
-      <div className="app-body">
-        {currentPage === 'market' ? (
-          <>
-            <FilterSidebar filters={filters} onFilterChange={setFilters} />
-            <div className="market-main">
-              <div className="market-toolbar">
-                <CategoryBar filters={filters} onFilterChange={setFilters} />
+    <CurrencyProvider>
+      <div className="app">
+        <Navbar currentPage={currentPage} onNavigate={handleNavigate} />
+        <div className="app-body">
+          {currentPage === 'market' ? (
+            <>
+              <FilterSidebar filters={filters} onFilterChange={setFilters} />
+              <div className="market-main">
+                <div className="market-toolbar">
+                  <CategoryBar filters={filters} onFilterChange={setFilters} />
+                </div>
+                <MarketGrid filters={filters} setFilters={setFilters} />
               </div>
-              <MarketGrid filters={filters} setFilters={setFilters} />
+            </>
+          ) : (
+            <div className="app-placeholder">
+              <h1>{currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}</h1>
+              <p>This page is part of the Streamlit app. Switch to Market to see the new interface.</p>
             </div>
-          </>
-        ) : (
-          <div className="app-placeholder">
-            <h1>{currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}</h1>
-            <p>This page is part of the Streamlit app. Switch to Market to see the new interface.</p>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+    </CurrencyProvider>
   )
 }

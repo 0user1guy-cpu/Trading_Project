@@ -5,7 +5,7 @@
 > (voir `lance/README.md`) pour recréer le projet à l'identique dans une
 > nouvelle conversation.
 
-**Généré le :** 12 August 2026 à 21:08 UTC  
+**Généré le :** 12 August 2026 à 21:42 UTC  
 **Dépôt :** `0user1guy-cpu/Trading_Project`  
 **Branche source :** `main` (après PR #2 mergée)
 
@@ -1420,6 +1420,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 
 ```jsx
 import { useState } from 'react'
+import { CurrencyProvider } from './contexts/CurrencyContext'
 import Navbar from './components/Navbar'
 import CategoryBar from './components/CategoryBar'
 import FilterSidebar from './components/FilterSidebar'
@@ -1454,27 +1455,29 @@ export default function App() {
   }
 
   return (
-    <div className="app">
-      <Navbar currentPage={currentPage} onNavigate={handleNavigate} />
-      <div className="app-body">
-        {currentPage === 'market' ? (
-          <>
-            <FilterSidebar filters={filters} onFilterChange={setFilters} />
-            <div className="market-main">
-              <div className="market-toolbar">
-                <CategoryBar filters={filters} onFilterChange={setFilters} />
+    <CurrencyProvider>
+      <div className="app">
+        <Navbar currentPage={currentPage} onNavigate={handleNavigate} />
+        <div className="app-body">
+          {currentPage === 'market' ? (
+            <>
+              <FilterSidebar filters={filters} onFilterChange={setFilters} />
+              <div className="market-main">
+                <div className="market-toolbar">
+                  <CategoryBar filters={filters} onFilterChange={setFilters} />
+                </div>
+                <MarketGrid filters={filters} setFilters={setFilters} />
               </div>
-              <MarketGrid filters={filters} setFilters={setFilters} />
+            </>
+          ) : (
+            <div className="app-placeholder">
+              <h1>{currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}</h1>
+              <p>This page is part of the Streamlit app. Switch to Market to see the new interface.</p>
             </div>
-          </>
-        ) : (
-          <div className="app-placeholder">
-            <h1>{currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}</h1>
-            <p>This page is part of the Streamlit app. Switch to Market to see the new interface.</p>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+    </CurrencyProvider>
   )
 }
 ```
@@ -1683,6 +1686,7 @@ export const FLOAT_COLORS = [
 ### `frontend/src/components/Navbar.jsx`
 
 ```jsx
+import CurrencySelector from './CurrencySelector'
 import './Navbar.css'
 
 const NAV_LINKS = [
@@ -1716,8 +1720,9 @@ export default function Navbar({ currentPage, onNavigate }) {
         </div>
       </div>
       <div className="navbar-right">
+        <CurrencySelector />
         <div className="navbar-selector">
-          <span className="navbar-selector-value">USD</span>
+          <span className="navbar-selector-value">FR</span>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
             <path d="M7 10l5 5 5-5z" />
           </svg>
@@ -2550,10 +2555,12 @@ export default function MarketGrid({ filters, setFilters }) {
 ### `frontend/src/components/SkinCard.jsx`
 
 ```jsx
-import { formatPrice, formatFloat } from '../api'
+import { formatFloat } from '../api'
+import { useCurrency } from '../contexts/CurrencyContext'
 import './SkinCard.css'
 
 export default function SkinCard({ item, onClick }) {
+  const { formatPrice } = useCurrency()
   return (
     <div
       className="skin-card"
@@ -2837,10 +2844,12 @@ export default function SkinCard({ item, onClick }) {
 
 ```jsx
 import { useEffect, useState } from 'react'
-import { fetchItemDetail, formatPrice, formatFloat } from '../api'
+import { fetchItemDetail, formatFloat } from '../api'
+import { useCurrency } from '../contexts/CurrencyContext'
 import './ItemModal.css'
 
 export default function ItemModal({ itemId, onClose }) {
+  const { formatPrice } = useCurrency()
   const [item, setItem] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -2943,7 +2952,7 @@ export default function ItemModal({ itemId, onClose }) {
                 {/* Graphique d'historique de prix */}
                 <div className="modal-chart-section">
                   <div className="modal-chart-title">Price History (30 days)</div>
-                  <PriceChart data={item.price_history} currentPrice={item.price} />
+                  <PriceChart data={item.price_history} currentPrice={item.price} formatPrice={formatPrice} />
                 </div>
 
                 {/* Boutons d'action */}
@@ -2976,7 +2985,7 @@ export default function ItemModal({ itemId, onClose }) {
   )
 }
 
-function PriceChart({ data, currentPrice }) {
+function PriceChart({ data, currentPrice, formatPrice }) {
   if (!data || data.length === 0) return <div className="modal-chart-empty">No data</div>
 
   const prices = data.map((d) => d.price)
