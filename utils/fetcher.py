@@ -1,7 +1,14 @@
 import sqlite3
 import os
 import requests
-from database import DB_PATH
+
+try:
+    from .database import DB_PATH
+    from .config import get_secret
+except ImportError:
+    # Permet aussi l'exécution directe : python utils/fetcher.py
+    from database import DB_PATH
+    from config import get_secret
 
 def fetch_and_store_market_data():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
@@ -18,6 +25,10 @@ def fetch_and_store_market_data():
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
         "Accept-Encoding": "gzip"
     }
+    # Clé API optionnelle : utilisée si OPENSKIN_API_KEY est définie dans .env
+    api_key = get_secret("OPENSKIN_API_KEY")
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
     
     try:
         # Utilisation de /v1/prices/all pour récupérer tous les items groupés et packés en une seule requête optimisée

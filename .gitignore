@@ -1,0 +1,40 @@
+# --- Secrets & variables d'environnement ---
+.env
+.env.*
+!.env.example
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# --- Streamlit ---
+.streamlit/secrets.toml
+
+# --- Bases de données volumineuses (à régénérer via utils/fetcher.py) ---
+data.sauv.trading/market_items.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# --- OS / éditeurs ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# --- Logs / caches ---
+*.log
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/

@@ -1,7 +1,7 @@
+import html
 import streamlit as st
 import sqlite3
 import os
-import streamlit.components.v1 as components
 from utils.rarity_helper import get_skin_rarity_and_style
 
 # Chemin vers la base de données mise à jour
@@ -61,26 +61,44 @@ def extract_wear_and_float(name, raw_float=None):
     return "Standard", 0.05
 
 @st.cache_data(ttl=300)
-def fetch_market_data_from_db(search_query):
+def fetch_market_data_from_db(search_query, category="Tous", float_min=0.0, float_max=1.0, sort_order="Prix croissant"):
+    """Recherche les offres en base en appliquant TOUS les filtres cote SQL.
+
+    Le filtrage par categorie, plage de float et tri se fait dans la requete
+    pour eviter le probleme ou les 150 premiers resultats ne matchent pas la
+    categorie selectionnee.
+    """
     if not os.path.exists(DB_PATH):
         return []
-        
+
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("CREATE INDEX IF NOT EXISTS idx_item_name ON market_offers(item_name);")
-    
-    query = "SELECT item_name, category, wear, float_val, price, platform, rarity, icon_url, history_price, volume FROM market_offers WHERE item_name LIKE ? LIMIT 150"
-    cursor.execute(query, [f"%{search_query}%"])
+
+    query = (
+        "SELECT item_name, category, wear, float_val, price, platform, rarity, "
+        "icon_url, history_price, volume FROM market_offers "
+        "WHERE item_name LIKE ? AND float_val BETWEEN ? AND ?"
+    )
+    params = [f"%{search_query}%", float_min, float_max]
+
+    if category != "Tous":
+        query += " AND category = ?"
+        params.append(category)
+
+    order = "ASC" if sort_order == "Prix croissant" else "DESC"
+    query += f" ORDER BY price {order} LIMIT 150"
+
+    cursor.execute(query, params)
     rows = cursor.fetchall()
     conn.close()
-    
+
     items = []
     for row in rows:
-        item_name = row[0] if row[0] and row[0] != "Unknown" else "Nom non spécifié"
+        item_name = row[0] if row[0] and row[0] != "Unknown" else "Nom non specifie"
         corrected_category = clean_category(item_name, row[1])
-        
+
         wear_val, float_val = extract_wear_and_float(item_name, row[3])
-        
+
         items.append({
             "name": item_name,
             "category": corrected_category,
@@ -122,44 +140,37 @@ def show():
     with col_sort:
         sort_filter = st.selectbox("Trier par", ["Prix croissant", "Prix décroissant", "Meilleur rabais (%)"], key="market_sort_filter")
 
-    if "last_search_query" not in st.session_state:
-        st.session_state.last_search_query = ""
-    if "cached_raw_items" not in st.session_state:
-        st.session_state.cached_raw_items = []
-
     current_query = search_query.strip()
-    if current_query != st.session_state.last_search_query:
-        st.session_state.last_search_query = current_query
-        if len(current_query) >= 2:
-            st.session_state.cached_raw_items = fetch_market_data_from_db(current_query)
-        else:
-            st.session_state.cached_raw_items = []
-
-    market_items = st.session_state.cached_raw_items
-
-    if selected_category != "Tous":
-        market_items = [item for item in market_items if item["category"] == selected_category]
-
     min_f, max_f = float_range
-    market_items = [item for item in market_items if min_f <= float(item["float_val"]) <= max_f]
 
-    if sort_filter == "Prix croissant":
-        market_items = sorted(market_items, key=lambda x: float(str(x["price"]).replace('$', '').replace(',', '.').strip()) if x["price"] else 0.0)
-    elif sort_filter == "Prix décroissant":
-        market_items = sorted(market_items, key=lambda x: float(str(x["price"]).replace('$', '').replace(',', '.').strip()) if x["price"] else 0.0, reverse=True)
+    if len(current_query) >= 2:
+        market_items = fetch_market_data_from_db(
+            current_query, selected_category, min_f, max_f, sort_filter
+        )
+    else:
+        market_items = []
 
     html_rows = ""
     for idx, item in enumerate(market_items):
         row_id = f"market_row_{idx}"
         
         styles = get_skin_rarity_and_style(item["name"], item["category"], item["rarity"])
-        icon_display = f'<img src="{item["icon"]}" class="w-full h-full object-contain drop-shadow-md" loading="lazy"/>' if item["icon"] else '<span class="text-xs text-gray-500">No img</span>'
+        safe_icon = html.escape(str(item["icon"])) if item["icon"] else ""
+        icon_display = f'<img src="{safe_icon}" class="w-full h-full object-contain drop-shadow-md" loading="lazy"/>' if safe_icon else '<span class="text-xs text-gray-500">No img</span>'
         
         # Conversion sécurisée en float pour éviter l'erreur de format
         try:
             f_display = float(item["float_val"])
         except (ValueError, TypeError):
             f_display = 0.05
+
+        safe_name = html.escape(str(item["name"]))
+        safe_category = html.escape(str(item["category"]))
+        safe_wear = html.escape(str(item["wear"]))
+        safe_price = html.escape(str(item["price"]))
+        safe_platform = html.escape(str(item["platform"]))
+        safe_history = html.escape(str(item["history_price"]))
+        safe_volume = html.escape(str(item["volume"]))
         
         html_rows += f"""
         <tr class="border-b transition-all hover:brightness-125" style="background-color: {styles['bg']}; border-color: {styles['border']};">
@@ -167,12 +178,12 @@ def show():
                 <div class="w-12 h-12 flex items-center justify-center bg-black/40 p-1 rounded-xl border border-white/10 shrink-0">
                     {icon_display}
                 </div>
-                <span class="text-white font-semibold">{item['name']}</span>
+                <span class="text-white font-semibold">{safe_name}</span>
             </td>
-            <td class="py-4 px-3"><span class="text-xs px-2.5 py-1 rounded-full {styles['badge']}">{item['category']}</span></td>
-            <td class="py-4 px-3 text-gray-300">{item['wear']} <span class="text-xs text-gray-400">({f_display:.2f})</span></td>
-            <td class="py-4 px-3 text-emerald-400 font-bold">{item['price']} $</td>
-            <td class="py-4 px-3 text-gray-300">{item['platform']}</td>
+            <td class="py-4 px-3"><span class="text-xs px-2.5 py-1 rounded-full {styles['badge']}">{safe_category}</span></td>
+            <td class="py-4 px-3 text-gray-300">{safe_wear} <span class="text-xs text-gray-400">({f_display:.2f})</span></td>
+            <td class="py-4 px-3 text-emerald-400 font-bold">{safe_price} $</td>
+            <td class="py-4 px-3 text-gray-300">{safe_platform}</td>
             <td class="py-4 px-4 text-right">
                 <button onclick="toggleRow('{row_id}')" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer border border-white/10 shadow">
                     Details
@@ -184,12 +195,12 @@ def show():
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-300">
                     <div class="bg-black/40 p-4 rounded-xl border border-white/5">
                         <div class="font-semibold text-white mb-2 flex items-center gap-2">📊 Historique & Tendance</div>
-                        <p class="text-xs text-gray-400">Prix moyen récent : <span class="text-white font-medium">{item['history_price']}</span></p>
-                        <p class="text-xs text-gray-400 mt-1">Volume global : <span class="text-white font-medium">{item['volume']}</span></p>
+                        <p class="text-xs text-gray-400">Prix moyen récent : <span class="text-white font-medium">{safe_history}</span></p>
+                        <p class="text-xs text-gray-400 mt-1">Volume global : <span class="text-white font-medium">{safe_volume}</span></p>
                     </div>
                     <div class="bg-black/40 p-4 rounded-xl border border-white/5">
                         <div class="font-semibold text-white mb-2 flex items-center gap-2">⚡ Actions Marché</div>
-                        <p class="text-xs text-gray-400 leading-relaxed">Offre synchronisée depuis {item['platform']}.</p>
+                        <p class="text-xs text-gray-400 leading-relaxed">Offre synchronisée depuis {safe_platform}.</p>
                     </div>
                 </div>
             </td>
@@ -259,4 +270,7 @@ def show():
     </html>
     """
 
-    components.html(full_table_html, height=550, scrolling=True)
+    st.html(
+        f'<div style="max-height:550px; overflow:auto; border-radius:16px;">{full_table_html}</div>',
+        unsafe_allow_javascript=True,
+    )
