@@ -1,0 +1,42 @@
+.pattern-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.pattern-chip {
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.pattern-chip:hover {
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+.pattern-chip.active {
+  color: #fff;
+  background-color: rgba(88, 166, 255, 0.2);
+  border-color: var(--accent);
+}
+
+.pattern-sub {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pattern-sub-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-muted);
+}

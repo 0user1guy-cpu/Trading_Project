@@ -26,6 +26,10 @@ export async function fetchCategories() {
   return fetchJSON(`${API_BASE}/categories`)
 }
 
+export async function fetchCollections() {
+  return fetchJSON(`${API_BASE}/collections`)
+}
+
 export async function fetchStats() {
   return fetchJSON(`${API_BASE}/stats`)
 }

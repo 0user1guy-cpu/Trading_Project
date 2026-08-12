@@ -56,6 +56,11 @@ def get_items(
     price_min: Optional[float] = Query(None, ge=0),
     price_max: Optional[float] = Query(None, ge=0),
     wear: Optional[str] = Query(None, description="FN, MW, FT, WW, BS"),
+    stattrak: Optional[bool] = Query(None, description="Filtrer StatTrak™"),
+    souvenir: Optional[bool] = Query(None, description="Filtrer Souvenir"),
+    collection: Optional[str] = Query(None, description="Nom de collection"),
+    pattern: Optional[str] = Query(None, description="Motif: fade, doppler, marble..."),
+    listing: Optional[str] = Query(None, description="all, buynow, auction (cosmétique)"),
     sort: str = Query("price_asc"),
     page: int = Query(1, ge=1),
     page_size: int = Query(60, ge=1, le=120),
@@ -104,6 +109,44 @@ def get_items(
             params.append(fmin)
             where.append("float_val < ?")
             params.append(fmax)
+
+    # Special : StatTrak / Souvenir (déduit du nom, source de vérité openskin)
+    if stattrak is True:
+        where.append("LOWER(item_name) LIKE '%stattrak%'")
+    if souvenir is True:
+        where.append("LOWER(item_name) LIKE '%souvenir%'")
+    if stattrak is False and souvenir is False:
+        # "Normal" = ni StatTrak ni Souvenir
+        where.append("LOWER(item_name) NOT LIKE '%stattrak%'")
+        where.append("LOWER(item_name) NOT LIKE '%souvenir%'")
+
+    # Collection : recherche des mots-clés de la collection dans le nom de l'item
+    if collection and collection.strip():
+        from utils.collections import collection_keywords
+        keywords = collection_keywords(collection.strip())
+        if keywords:
+            clauses = " OR ".join(["LOWER(item_name) LIKE ?" for _ in keywords])
+            where.append(f"({clauses})")
+            for kw in keywords:
+                params.append(f"%{kw.lower()}%")
+        else:
+            where.append("LOWER(item_name) LIKE ?")
+            params.append(f"%{collection.strip().lower()}%")
+
+    # Motif (pattern) : filtre par type de skin dans le nom
+    pattern_map = {
+        "fade": "Fade",
+        "doppler": "Doppler",
+        "marble": "Marble Fade",
+        "case_hardened": "Case Hardened",
+        "tiger": "Tiger Tooth",
+        "fade_blue": "Fade",
+    }
+    if pattern and pattern.strip():
+        key = pattern.strip().lower()
+        label = pattern_map.get(key, pattern.strip())
+        where.append("LOWER(item_name) LIKE ?")
+        params.append(f"%{label.lower()}%")
 
     where_clause = " AND ".join(where) if where else "1=1"
     order_clause = VALID_SORTS.get(sort, "price ASC")
@@ -249,6 +292,13 @@ def get_stats():
 @app.get("/api/health")
 def health():
     return {"status": "ok", "db_path": DB_PATH}
+
+
+@app.get("/api/collections")
+def get_collections():
+    """Liste des collections CS2 disponibles."""
+    from utils.collections import get_collections_list
+    return [{"name": c} for c in get_collections_list()]
 
 
 # ---------------------------------------------------------------------------

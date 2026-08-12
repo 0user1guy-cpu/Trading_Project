@@ -1,0 +1,85 @@
+.filter-section {
+  border-bottom: 1px solid var(--border);
+  padding: 10px 0;
+}
+
+.filter-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 2px 0;
+  text-align: left;
+}
+
+.filter-section-chevron {
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+.filter-section-chevron.rotated { transform: rotate(90deg); }
+
+.filter-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.filter-section-summary {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.filter-section-body {
+  padding: 10px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Bouton déclencheur de popup (style CSFloat) */
+.filter-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  width: 100%;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.filter-trigger:hover,
+.filter-trigger.open {
+  border-color: var(--text-muted);
+  background-color: var(--bg-hover);
+}
+
+.filter-trigger-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.filter-trigger-value {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.filter-trigger-chevron {
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+.filter-trigger-chevron.rotated { transform: rotate(180deg); }
