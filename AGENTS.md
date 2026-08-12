@@ -32,6 +32,7 @@ cd frontend && npm install && npm run build
 - `utils/` — fetcher.py (API openskin), rarity_helper.py, database.py, config.py
 - `data.sauv.trading/` — base SQLite (market_items.db, 37 368 items)
 - `memory/` — **résumés des conversations** (voir protocole ci-dessous)
+- `lance/` — **snapshot + protocole « lance »** pour recréer le projet à l'identique (voir ci-dessous)
 
 ---
 
@@ -68,3 +69,38 @@ Avant de terminer, crée un résumé de la conversation :
 - Numérote les conversations de façon séquentielle (01, 02, 03…).
 - Sois honnête dans les résumés : note les limitations et ce qui ne marche pas encore.
 - Ces fichiers sont lus par les futures conversations — écris-les pour être utile à ton "soi futur".
+
+---
+
+## 🚀 Protocole « lance » — recréer le projet à l'identique
+
+L'utilisateur peut, dans **n'importe quelle nouvelle conversation**, dire :
+
+> **« lance …… »** *(ex: « lance le projet », « lance conv01 », « lance l'interface csfloat »)*
+
+### Que faire quand tu entends « lance »
+
+1. **Lis `lance/README.md`** puis **`lance/snapshot_conv01.md`** (la photocopie
+   complète du projet : contenu de chaque fichier + paramètres + commandes).
+2. **Recrée l'arborescence** de fichiers exactement comme dans le snapshot.
+   - Soit à la main (un fichier = un bloc de code du snapshot),
+   - Soit en lançant le relanceur : `python lance/relancer.py`
+     (ajoute `--install` pour les deps, `--build` pour le frontend,
+     `--start` pour démarrer, ou `--full` pour tout faire).
+3. **Base SQLite** : soit copier `data.sauv.trading/market_items.db`,
+   soit `python utils/database.py` puis `python utils/fetcher.py` (clé `.env` requise).
+4. **Démarre** : `python lancer.py` → http://localhost:8000
+
+### Garder le snapshot à jour
+
+Après chaque évolution du projet, **régénère** la photocopie :
+```bash
+python lance/generer_snapshot.py   # réécrit lance/snapshot_conv01.md
+```
+Puis commit/push pour que les futures conversations aient la version à jour.
+
+### Fichiers du dossier `lance/`
+- `lance/README.md` — protocole + paramètres clés.
+- `lance/snapshot_conv01.md` — blueprint complet (généré, ne pas éditer à la main).
+- `lance/generer_snapshot.py` — régénère le snapshot depuis les fichiers sources.
+- `lance/relancer.py` — recrée le projet depuis le snapshot (+ install/build/start).
