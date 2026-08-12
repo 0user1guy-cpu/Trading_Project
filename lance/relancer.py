@@ -7,13 +7,20 @@ fichiers à la racine du projet, puis (optionnellement) installe les dépendance
 build le frontend et démarre le serveur.
 
 Usage :
-    python lance/relancer.py                  # recrée les fichiers uniquement
+    python lance/relancer.py                  # sync GitHub + régénère le snapshot
     python lance/relancer.py --install        # + pip install + npm install
     python lance/relancer.py --build          # + build du frontend
     python lance/relancer.py --start          # + lance le serveur
-    python lance/relancer.py --full          # fait tout (install + build + start)
+    python lance/relancer.py --full          # fait tout (sync + install + build + start)
+    python lance/relancer.py --from-snapshot  # OFFLINE : recrée depuis le snapshot (sans git pull)
 
 Le protocole « lance » (voir lance/README.md) correspond à `--full`.
+
+IMPORTANT : par défaut, le relanceur tire le **vrai projet GitHub à jour**
+(`git pull` sur la branche courante) AVANT de lancer, puis régénère le
+snapshot depuis les fichiers actuels. Ainsi « lance le projet » suit toujours
+la progression réelle du dépôt, pas une photocopie figée. Utilise
+`--from-snapshot` uniquement en mode hors-ligne (sans accès git/remote).
 """
 import os
 import re
@@ -21,6 +28,7 @@ import sys
 import subprocess
 
 SNAPSHOT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "snapshot_conv01.md")
+SNAPSHOT_GEN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "generer_snapshot.py")
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Regex : capture le chemin après "### `chemin`" puis le bloc de code qui suit.
@@ -99,6 +107,51 @@ def run(cmd, cwd=PROJECT_ROOT, shell=False):
     return res.returncode == 0
 
 
+def sync_from_github():
+    """Tire le vrai projet GitHub à jour avant de lancer.
+
+    On récupère les dernières modifications de la branche COURANTE (git pull),
+    SANS changer de branche (pour ne pas perdre de travail en cours). Ainsi
+    « lance le projet » suit toujours la progression réelle du dépôt, pas une
+    photocopie figée. Si le pull échoue (hors-ligne, modifs locales non
+    commitées), on continue avec les fichiers locaux tels quels.
+    """
+    print("\n🔄 Synchronisation depuis GitHub (git pull sur la branche courante)...")
+    git = "git"
+
+    if not run([git, "fetch", "--all", "--prune"]):
+        print("   ⚠️  git fetch a échoué (pas de remote ? mode hors-ligne ?).")
+        print("      → on continue avec les fichiers locaux tels quels.")
+        return False
+
+    res = subprocess.run([git, "pull", "--ff-only"], cwd=PROJECT_ROOT,
+                          capture_output=True, text=True)
+    if res.returncode != 0:
+        msg = (res.stderr or res.stdout or "").strip().splitlines()
+        print("   ⚠️  git pull --ff-only a échoué :", " ".join(msg)[:140])
+        print("      → on continue avec les fichiers locaux tels quels.")
+        return False
+
+    print("   ✅ Projet synchronisé (branche courante à jour).")
+    return True
+
+
+def refresh_snapshot():
+    """Régénère le snapshot depuis les fichiers sources actuels.
+
+    À appeler APRÈS git pull pour que le blueprint reflète le vrai projet
+    à jour. Échoue silencieusement si le générateur est absent.
+    """
+    print("\n📝 Régénération du snapshot depuis les fichiers actuels...")
+    if not os.path.isfile(SNAPSHOT_GEN):
+        print("   ⚠️  generer_snapshot.py introuvable — snapshot non rafraîchi.")
+        return False
+    ok = run([sys.executable, SNAPSHOT_GEN])
+    if ok:
+        print("   ✅ Snapshot rafraîchi (snapshot_conv01.md).")
+    return ok
+
+
 def install_deps():
     print("\n📦 Installation des dépendances Python...")
     ok = run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
@@ -145,9 +198,19 @@ def main():
     p.add_argument("--install", action="store_true", help="Installe les deps Python + npm")
     p.add_argument("--build", action="store_true", help="Build le frontend React")
     p.add_argument("--start", action="store_true", help="Démarre le serveur (python lancer.py)")
-    p.add_argument("--full", action="store_true", help="= install + build + start")
+    p.add_argument("--full", action="store_true", help="= sync GitHub + refresh snapshot + install + build + start")
+    p.add_argument("--from-snapshot", action="store_true",
+                   help="OFFLINE : recrée depuis le snapshot SANS git pull (photocopie figée)")
     args = p.parse_args()
 
+    # --- Mode online (défaut) : on tire le vrai projet GitHub à jour ---
+    use_snapshot_only = args.from_snapshot
+
+    if not use_snapshot_only:
+        sync_from_github()
+        refresh_snapshot()
+
+    # --- Recrée les fichiers depuis le snapshot (maintenant à jour) ---
     files = parse_snapshot()
     recreate_files(files)
     ensure_db()
@@ -163,11 +226,12 @@ def main():
         start_server()
 
     if not any([args.install, args.build, args.start, args.full]):
-        print("✅ Fichiers recréés. Pour aller plus loin :")
+        print("✅ Projet synchronisé + fichiers prêts. Pour aller plus loin :")
         print("   pip install -r requirements.txt")
         print("   cd frontend && npm install && npm run build")
         print("   python lancer.py   # → http://localhost:8000")
         print("\n   ou :  python lance/relancer.py --full")
+        print("\n💡 En mode offline (sans git) :  python lance/relancer.py --from-snapshot --full")
 
 
 if __name__ == "__main__":

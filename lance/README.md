@@ -62,16 +62,41 @@ Dans **toute nouvelle conversation**, l'utilisateur peut dire :
 
 ---
 
-## 🔄 Garder le snapshot à jour
+## 🔄 Garder le snapshot synchronisé avec le vrai projet GitHub
 
-Après chaque évolution du projet, relancer le générateur pour rafraîchir la photocopie :
+Le snapshot `lance/snapshot_conv01.md` est une **photocopie** qui doit refléter le
+**vrai projet à jour**. Deux mécanismes s'en assurent :
+
+### A. Au lancement (« lance le projet »)
+
+Le relanceur (`lance/relancer.py`) fait automatiquement, **avant** de recréer les fichiers :
+1. `git fetch --all` + `git pull --ff-only` sur la branche courante → récupère les
+   dernières modifs poussées sur GitHub.
+2. `python lance/generer_snapshot.py` → régénère la photocopie depuis les fichiers
+   actuels (donc à jour).
+
+Ainsi « lance le projet » suit **toujours la progression réelle du dépôt**, pas une
+photocopie figée.
+
+### B. À la fin de chaque conversation qui modifie le projet
+
+Pour que la **prochaine** conversation récupère cette version, il faut pousser la
+photocopie mise à jour sur GitHub. **À écrire à la fin de chaque conversation où le
+projet a été modifié** :
 
 ```bash
-python lance/generer_snapshot.py
+python lance/generer_snapshot.py && git add lance/snapshot_conv01.md && git commit -m "chore: refresh lance snapshot" && git push
 ```
 
-Le générateur parcourt les fichiers sources et réécrit `snapshot_conv01.md`.
-Commit puis push pour que les futures conversations aient la version à jour.
+> 💡 L'agent peut faire ça tout seul à la fin d'une conversation où il a modifié le
+> projet. Si tu préfères l'écrire toi-même, c'est cette commande exacte.
+
+### Mode offline
+
+Si tu n'as pas accès au remote GitHub (réseau coupé) :
+```bash
+python lance/relancer.py --from-snapshot --full   # saute le git pull, recrée depuis la photocopie
+```
 
 ---
 

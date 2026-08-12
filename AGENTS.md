@@ -80,24 +80,35 @@ L'utilisateur peut, dans **n'importe quelle nouvelle conversation**, dire :
 
 ### Que faire quand tu entends « lance »
 
-1. **Lis `lance/README.md`** puis **`lance/snapshot_conv01.md`** (la photocopie
-   complète du projet : contenu de chaque fichier + paramètres + commandes).
-2. **Recrée l'arborescence** de fichiers exactement comme dans le snapshot.
+1. **Tire le vrai projet GitHub à jour** : `git pull` sur la branche courante
+   (pour récupérer les dernières modifs poussées — sinon tu recréerais une
+   version obsolète). Le relanceur le fait automatiquement.
+2. **Régénère le snapshot** depuis les fichiers actuels :
+   `python lance/generer_snapshot.py` (le relanceur le fait aussi auto).
+3. **Recrée l'arborescence** comme décrit dans `lance/snapshot_conv01.md`.
    - Soit à la main (un fichier = un bloc de code du snapshot),
    - Soit en lançant le relanceur : `python lance/relancer.py`
      (ajoute `--install` pour les deps, `--build` pour le frontend,
-     `--start` pour démarrer, ou `--full` pour tout faire).
-3. **Base SQLite** : soit copier `data.sauv.trading/market_items.db`,
+     `--start` pour démarrer, ou `--full` pour tout faire, sync comprise).
+   - En mode offline (sans git) : `--from-snapshot` pour sauter le `git pull`.
+4. **Base SQLite** : soit copier `data.sauv.trading/market_items.db`,
    soit `python utils/database.py` puis `python utils/fetcher.py` (clé `.env` requise).
-4. **Démarre** : `python lancer.py` → http://localhost:8000
+5. **Démarre** : `python lancer.py` → http://localhost:8000
 
-### Garder le snapshot à jour
+### Garder le snapshot synchronisé avec le vrai projet GitHub
 
-Après chaque évolution du projet, **régénère** la photocopie :
+Le snapshot `lance/snapshot_conv01.md` est une **photocopie** qui doit refléter
+le **vrai projet à jour**. Pour ça, **à la fin de chaque conversation** où le
+projet a été modifié, l'utilisateur (ou l'agent) lance :
+
 ```bash
-python lance/generer_snapshot.py   # réécrit lance/snapshot_conv01.md
+# À ÉCRIRE À LA FIN DE CHAQUE CONVERSATION QUI MODIFIE LE PROJET :
+python lance/generer_snapshot.py && git add lance/snapshot_conv01.md && git commit -m "chore: refresh lance snapshot" && git push
 ```
-Puis commit/push pour que les futures conversations aient la version à jour.
+
+Cela régénère la photocopie depuis les fichiers actuels et la pousse sur GitHub,
+pour que la prochaine conversation qui dit « lance le projet » récupère bien la
+version la plus récente (via le `git pull` automatique du relanceur).
 
 ### Fichiers du dossier `lance/`
 - `lance/README.md` — protocole + paramètres clés.

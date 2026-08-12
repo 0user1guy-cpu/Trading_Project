@@ -5,7 +5,7 @@
 > (voir `lance/README.md`) pour recréer le projet à l'identique dans une
 > nouvelle conversation.
 
-**Généré le :** 12 August 2026 à 05:28 UTC  
+**Généré le :** 12 August 2026 à 05:40 UTC  
 **Dépôt :** `0user1guy-cpu/Trading_Project`  
 **Branche source :** `main` (après PR #2 mergée)
 
