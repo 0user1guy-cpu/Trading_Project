@@ -13,6 +13,7 @@ Ce dossier contient les résumés de chaque conversation importante entre l'util
 |---|---------|------|-------|
 | 1 | [conv_01_interface-csfloat.md](conv_01_interface-csfloat.md) | 12 août 2026 | Interface CSFloat-style (FastAPI + React) + serveur unique `lancer.py` |
 | 2 | [conv_02_sidebar-csfloat-agregateurs.md](conv_02_sidebar-csfloat-agregateurs.md) | 12 août 2026 | Refonte barre latérale CSFloat (Float/Wear séparés + nouveaux filtres) + recherche agrégateurs API |
+| 3 | [conv_03_lance-projet.md](conv_03_lance-projet.md) | 12 août 2026 | « Lance le projet » — récup contexte + clonage GitHub + lancement serveur port 12000 |
 
 ---
 
