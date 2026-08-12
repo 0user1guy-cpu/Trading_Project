@@ -1,0 +1,212 @@
+.filter-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background-color: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  padding: 16px;
+  overflow-y: auto;
+  max-height: calc(100vh - 56px);
+  position: sticky;
+  top: 56px;
+}
+
+.filter-section {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.filter-section:last-child {
+  border-bottom: none;
+}
+
+.filter-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+.filter-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.filter-search-input:focus {
+  border-color: var(--accent);
+}
+
+.filter-search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.filter-category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.filter-category-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  text-align: left;
+  width: 100%;
+  transition: all 0.15s ease;
+}
+
+.filter-category-item:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.filter-category-item.active {
+  background-color: rgba(88, 166, 255, 0.15);
+  color: var(--accent);
+}
+
+.filter-category-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  background-color: var(--bg-tertiary);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.filter-category-item.active .filter-category-count {
+  background-color: rgba(88, 166, 255, 0.2);
+  color: var(--accent);
+}
+
+.filter-price-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.filter-price-input {
+  flex: 1;
+  width: 100%;
+  padding: 7px 10px;
+  font-size: 13px;
+  color: var(--text-primary);
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.filter-price-input:focus {
+  border-color: var(--accent);
+}
+
+.filter-price-input::placeholder {
+  color: var(--text-muted);
+}
+
+.filter-price-separator {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.filter-price-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.filter-price-preset {
+  padding: 5px 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  transition: all 0.15s ease;
+}
+
+.filter-price-preset:hover {
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+.filter-wear-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.filter-wear-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  width: 100%;
+  transition: all 0.15s ease;
+}
+
+.filter-wear-item:hover {
+  background-color: var(--bg-hover);
+}
+
+.filter-wear-item.active {
+  background-color: rgba(88, 166, 255, 0.15);
+}
+
+.filter-wear-code {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background-color: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  min-width: 28px;
+  text-align: center;
+}
+
+.filter-wear-item.active .filter-wear-code {
+  background-color: rgba(88, 166, 255, 0.2);
+  color: var(--accent);
+}
+
+.filter-wear-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.filter-wear-item.active .filter-wear-label {
+  color: var(--text-primary);
+}
+
+.filter-sort-select {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.filter-sort-select:focus {
+  border-color: var(--accent);
+}

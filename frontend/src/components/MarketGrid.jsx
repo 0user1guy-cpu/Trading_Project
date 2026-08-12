@@ -1,0 +1,103 @@
+import { useEffect, useState, useCallback } from 'react'
+import { fetchItems } from '../api'
+import SkinCard from './SkinCard'
+import ItemModal from './ItemModal'
+import './MarketGrid.css'
+
+export default function MarketGrid({ filters, setFilters }) {
+  const [data, setData] = useState({ items: [], total: 0, total_pages: 0, page: 1 })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [selectedItem, setSelectedItem] = useState(null)
+
+  // Debounce sur la recherche texte
+  const [debouncedQ, setDebouncedQ] = useState(filters.q)
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(filters.q), 350)
+    return () => clearTimeout(t)
+  }, [filters.q])
+
+  const loadItems = useCallback(() => {
+    setLoading(true)
+    setError(null)
+    const params = {
+      ...filters,
+      q: debouncedQ,
+      page_size: 60,
+    }
+    fetchItems(params)
+      .then(setData)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false))
+  }, [filters, debouncedQ])
+
+  useEffect(() => {
+    loadItems()
+  }, [loadItems])
+
+  const handlePageChange = (newPage) => {
+    setFilters({ ...filters, page: newPage })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  return (
+    <div className="market-grid-container">
+      <div className="market-grid-header">
+        <div className="market-results-count">
+          {loading ? 'Loading...' : `${data.total.toLocaleString()} items`}
+        </div>
+      </div>
+
+      {error && <div className="market-error">Failed to load: {error}</div>}
+
+      {loading && data.items.length === 0 ? (
+        <div className="market-grid">
+          {Array.from({ length: 18 }).map((_, i) => (
+            <div className="skin-card-skeleton" key={i} />
+          ))}
+        </div>
+      ) : (
+        <div className="market-grid">
+          {data.items.map((item) => (
+            <SkinCard key={item.id} item={item} onClick={setSelectedItem} />
+          ))}
+        </div>
+      )}
+
+      {!loading && data.items.length === 0 && !error && (
+        <div className="market-empty">
+          <span className="market-empty-icon">🔍</span>
+          <p>No items match your filters.</p>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {data.total_pages > 1 && (
+        <div className="market-pagination">
+          <button
+            className="market-page-btn"
+            disabled={data.page <= 1}
+            onClick={() => handlePageChange(data.page - 1)}
+          >
+            ← Prev
+          </button>
+          <span className="market-page-info">
+            Page {data.page} / {data.total_pages}
+          </span>
+          <button
+            className="market-page-btn"
+            disabled={data.page >= data.total_pages}
+            onClick={() => handlePageChange(data.page + 1)}
+          >
+            Next →
+          </button>
+        </div>
+      )}
+
+      {/* Modal de détail */}
+      {selectedItem && (
+        <ItemModal itemId={selectedItem.id} onClose={() => setSelectedItem(null)} />
+      )}
+    </div>
+  )
+}
