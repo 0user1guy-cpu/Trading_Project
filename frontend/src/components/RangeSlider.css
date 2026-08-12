@@ -1,0 +1,91 @@
+.range-slider {
+  user-select: none;
+  padding: 6px 0 2px;
+}
+
+.range-slider-track {
+  position: relative;
+  height: 8px;
+  border-radius: 4px;
+  overflow: visible;
+  cursor: pointer;
+  background: #0d1117;
+}
+
+/* Variante float : les segments colorés sont rendus par le JSX */
+.range-slider-track.float {
+  background: #0d1117;
+}
+
+/* Variante price : barre sombre unie style CSFloat */
+.range-slider-track.price {
+  background: #1f2630;
+  border: 1px solid #2d3744;
+}
+
+.range-slider-segment {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  opacity: 0.92;
+}
+.range-slider-segment:first-child { border-radius: 4px 0 0 4px; }
+.range-slider-segment:last-child  { border-radius: 0 4px 4px 0; }
+
+/* Voiles assombris hors sélection */
+.range-slider-dim {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: rgba(13, 17, 23, 0.74);
+  pointer-events: none;
+  z-index: 1;
+}
+.range-slider-dim.left  { left: 0; border-radius: 4px 0 0 4px; }
+.range-slider-dim.right { right: 0; border-radius: 0 4px 4px 0; }
+
+/* Curseur flèche */
+.range-slider-thumb {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  cursor: grab;
+  z-index: 3;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  margin-top: -2px;
+}
+
+.range-slider-thumb:active { cursor: grabbing; }
+
+.range-slider-arrow {
+  color: #e6edf3;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.8));
+  transition: transform 0.1s ease;
+}
+
+.range-slider-thumb:hover .range-slider-arrow {
+  color: #58a6ff;
+  transform: scale(1.15);
+}
+
+.range-slider-labels {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 10px;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  color: var(--text-muted);
+}
+
+.range-slider-value {
+  color: var(--text-primary);
+  font-weight: 600;
+  background-color: var(--bg-tertiary);
+  padding: 2px 8px;
+  border-radius: 8px;
+}

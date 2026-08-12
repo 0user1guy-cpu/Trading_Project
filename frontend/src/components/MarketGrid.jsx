@@ -20,10 +20,34 @@ export default function MarketGrid({ filters, setFilters }) {
   const loadItems = useCallback(() => {
     setLoading(true)
     setError(null)
+    // Transforme les filtres structurés en paramètres API plats.
     const params = {
-      ...filters,
       q: debouncedQ,
+      category: filters.category,
+      float_min: filters.float_min,
+      float_max: filters.float_max,
+      price_min: filters.price_min,
+      price_max: filters.price_max,
+      wear: filters.wear,
+      sort: filters.sort,
+      page: filters.page,
       page_size: 60,
+      collection: filters.collection,
+      listing: filters.listing,
+    }
+    // Special : StatTrak / Souvenir / Normal
+    if (filters.special) {
+      params.stattrak = filters.special.stattrak ?? null
+      params.souvenir = filters.special.souvenir ?? null
+      // Si "Normal" seul (sans StatTrak/Souvenir), on exige ni l'un ni l'autre.
+      if (filters.special.normal && !filters.special.stattrak && !filters.special.souvenir) {
+        params.stattrak = false
+        params.souvenir = false
+      }
+    }
+    // Pattern : garde le chip sélectionné comme chaîne.
+    if (filters.pattern && filters.pattern.chip) {
+      params.pattern = filters.pattern.chip.toLowerCase().replace(/\s+/g, '_')
     }
     fetchItems(params)
       .then(setData)

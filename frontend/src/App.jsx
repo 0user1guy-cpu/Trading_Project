@@ -13,6 +13,13 @@ const DEFAULT_FILTERS = {
   price_min: null,
   price_max: null,
   wear: null,
+  stattrak: null,
+  souvenir: null,
+  collection: null,
+  pattern: null,
+  listing: 'all',
+  special: null,
+  stickers: null,
   sort: 'price_asc',
   page: 1,
 }
