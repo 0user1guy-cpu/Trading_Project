@@ -10,9 +10,10 @@ import os
 import sqlite3
 from typing import Optional
 
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 
 from .logic import DB_PATH, clean_category, extract_wear_and_float, get_rarity_style
 
@@ -246,3 +247,34 @@ def get_stats():
 @app.get("/api/health")
 def health():
     return {"status": "ok", "db_path": DB_PATH}
+
+
+# ---------------------------------------------------------------------------
+# Serving du frontend React (build de production)
+# ---------------------------------------------------------------------------
+# Une fois le frontend compilé (npm run build → frontend/dist/), FastAPI sert
+# les fichiers statiques directement. L'utilisateur n'a besoin que d'un seul
+# serveur (port 8000) au lieu de deux.
+FRONTEND_DIST = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "dist")
+
+if os.path.isdir(FRONTEND_DIST):
+    # Sert les assets (JS, CSS, images) depuis /assets
+    assets_dir = os.path.join(FRONTEND_DIST, "assets")
+    if os.path.isdir(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    @app.get("/{full_path:path}")
+    def serve_spa(full_path: str, request: Request):
+        """Sert l'index.html React pour toutes les routes non-API (SPA fallback)."""
+        # Ne capture pas les routes /api (déjà définies plus haut)
+        if full_path.startswith("api"):
+            raise HTTPException(status_code=404, detail="Endpoint non trouvé")
+        # Si c'est un fichier statique qui existe, on le sert directement
+        file_path = os.path.join(FRONTEND_DIST, full_path)
+        if full_path and os.path.isfile(file_path):
+            return FileResponse(file_path)
+        # Sinon fallback sur index.html (comportement SPA standard)
+        index_path = os.path.join(FRONTEND_DIST, "index.html")
+        if os.path.isfile(index_path):
+            return FileResponse(index_path)
+        raise HTTPException(status_code=404, detail="Frontend non compilé — lancez 'npm run build' dans frontend/")
