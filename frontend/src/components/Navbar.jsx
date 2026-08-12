@@ -1,3 +1,4 @@
+import CurrencySelector from './CurrencySelector'
 import './Navbar.css'
 
 const NAV_LINKS = [
@@ -31,8 +32,9 @@ export default function Navbar({ currentPage, onNavigate }) {
         </div>
       </div>
       <div className="navbar-right">
+        <CurrencySelector />
         <div className="navbar-selector">
-          <span className="navbar-selector-value">USD</span>
+          <span className="navbar-selector-value">FR</span>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
             <path d="M7 10l5 5 5-5z" />
           </svg>

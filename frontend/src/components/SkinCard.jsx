@@ -1,7 +1,9 @@
-import { formatPrice, formatFloat } from '../api'
+import { formatFloat } from '../api'
+import { useCurrency } from '../contexts/CurrencyContext'
 import './SkinCard.css'
 
 export default function SkinCard({ item, onClick }) {
+  const { formatPrice } = useCurrency()
   return (
     <div
       className="skin-card"

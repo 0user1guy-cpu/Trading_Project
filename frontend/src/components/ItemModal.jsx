@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
-import { fetchItemDetail, formatPrice, formatFloat } from '../api'
+import { fetchItemDetail, formatFloat } from '../api'
+import { useCurrency } from '../contexts/CurrencyContext'
 import './ItemModal.css'
 
 export default function ItemModal({ itemId, onClose }) {
+  const { formatPrice } = useCurrency()
   const [item, setItem] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -105,7 +107,7 @@ export default function ItemModal({ itemId, onClose }) {
                 {/* Graphique d'historique de prix */}
                 <div className="modal-chart-section">
                   <div className="modal-chart-title">Price History (30 days)</div>
-                  <PriceChart data={item.price_history} currentPrice={item.price} />
+                  <PriceChart data={item.price_history} currentPrice={item.price} formatPrice={formatPrice} />
                 </div>
 
                 {/* Boutons d'action */}
@@ -138,7 +140,7 @@ export default function ItemModal({ itemId, onClose }) {
   )
 }
 
-function PriceChart({ data, currentPrice }) {
+function PriceChart({ data, currentPrice, formatPrice }) {
   if (!data || data.length === 0) return <div className="modal-chart-empty">No data</div>
 
   const prices = data.map((d) => d.price)
