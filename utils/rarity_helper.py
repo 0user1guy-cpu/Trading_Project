@@ -1,75 +1,161 @@
+"""Détermine la rareté d'un skin et ses couleurs (style CSFloat).
+
+Couleurs officielles CS2 par rareté, avec un dégradé diffus pour le fond des
+cartes (background de la fenêtre de l'arme). La rareté provient désormais de
+l'API openskin /v1/items (champ `rarity`), normalisée en minuscules.
+"""
+
+# Mapping rareté -> (nom_affiché, couleur_solid, couleur_fond_rgba_diffus,
+#                    couleur_bordure_rgba, badge_tailwind)
+RARITY_MAP = {
+    "consumer grade": (
+        "Consumer",
+        "#b0c3d9",
+        "rgba(176, 195, 217, 0.18)",
+        "rgba(176, 195, 217, 0.45)",
+        "bg-slate-400/30 text-slate-200 border border-slate-400/50",
+    ),
+    "base grade": (
+        "Base Grade",
+        "#b0c3d9",
+        "rgba(176, 195, 217, 0.15)",
+        "rgba(176, 195, 217, 0.4)",
+        "bg-slate-400/30 text-slate-200 border border-slate-400/50",
+    ),
+    "industrial grade": (
+        "Industrial",
+        "#5e98d9",
+        "rgba(94, 152, 217, 0.18)",
+        "rgba(94, 152, 217, 0.5)",
+        "bg-sky-500/30 text-sky-300 border border-sky-500/50",
+    ),
+    "mil-spec grade": (
+        "Mil-Spec",
+        "#4b69ff",
+        "rgba(75, 105, 255, 0.18)",
+        "rgba(75, 105, 255, 0.5)",
+        "bg-blue-600/30 text-blue-300 border border-blue-500/50",
+    ),
+    "high grade": (
+        "High Grade",
+        "#4b69ff",
+        "rgba(75, 105, 255, 0.16)",
+        "rgba(75, 105, 255, 0.45)",
+        "bg-blue-600/30 text-blue-300 border border-blue-500/50",
+    ),
+    "remarkable": (
+        "Remarkable",
+        "#8847ff",
+        "rgba(136, 71, 255, 0.18)",
+        "rgba(136, 71, 255, 0.5)",
+        "bg-violet-600/30 text-violet-300 border border-violet-500/50",
+    ),
+    "restricted": (
+        "Restricted",
+        "#8847ff",
+        "rgba(136, 71, 255, 0.18)",
+        "rgba(136, 71, 255, 0.5)",
+        "bg-purple-600/30 text-purple-300 border border-purple-500/50",
+    ),
+    "exotic": (
+        "Exotic",
+        "#d32ce6",
+        "rgba(211, 44, 230, 0.18)",
+        "rgba(211, 44, 230, 0.5)",
+        "bg-fuchsia-600/30 text-fuchsia-300 border border-fuchsia-500/50",
+    ),
+    "classified": (
+        "Classified",
+        "#d32ce6",
+        "rgba(211, 44, 230, 0.18)",
+        "rgba(211, 44, 230, 0.5)",
+        "bg-pink-600/30 text-pink-300 border border-pink-500/50",
+    ),
+    "covert": (
+        "Covert",
+        "#eb4b4b",
+        "rgba(235, 75, 75, 0.18)",
+        "rgba(235, 75, 75, 0.5)",
+        "bg-red-600/30 text-red-300 border border-red-500/50",
+    ),
+    "contraband": (
+        "Contraband",
+        "#e4ae39",
+        "rgba(228, 174, 57, 0.18)",
+        "rgba(228, 174, 57, 0.5)",
+        "bg-amber-500/30 text-amber-300 border border-amber-500/50",
+    ),
+    "extraordinary": (
+        "Extraordinary",
+        "#ffd700",
+        "rgba(255, 215, 0, 0.15)",
+        "rgba(255, 215, 0, 0.45)",
+        "bg-yellow-500/25 text-yellow-300 border border-yellow-500/40",
+    ),
+    "superior": (
+        "Superior",
+        "#ffd700",
+        "rgba(255, 215, 0, 0.14)",
+        "rgba(255, 215, 0, 0.4)",
+        "bg-yellow-500/25 text-yellow-300 border border-yellow-500/40",
+    ),
+    "distinguished": (
+        "Distinguished",
+        "#8847ff",
+        "rgba(136, 71, 255, 0.16)",
+        "rgba(136, 71, 255, 0.45)",
+        "bg-purple-600/30 text-purple-300 border border-purple-500/50",
+    ),
+    "exceptional": (
+        "Exceptional",
+        "#4b69ff",
+        "rgba(75, 105, 255, 0.16)",
+        "rgba(75, 105, 255, 0.45)",
+        "bg-blue-600/30 text-blue-300 border border-blue-500/50",
+    ),
+    "master": (
+        "Master",
+        "#eb4b4b",
+        "rgba(235, 75, 75, 0.16)",
+        "rgba(235, 75, 75, 0.45)",
+        "bg-red-600/30 text-red-300 border border-red-500/50",
+    ),
+}
+
+DEFAULT_RARITY = (
+    "Consumer",
+    "rgba(176, 195, 217, 0.12)",
+    "rgba(176, 195, 217, 0.35)",
+    "bg-slate-400/25 text-slate-300 border border-slate-400/40",
+)
+
+
 def get_skin_rarity_and_style(item_name, category="", raw_rarity=""):
+    """Retourne {rarity_name, bg, border, badge, color} pour un item.
+
+    - `bg` : couleur de fond RGBA diffus (pour le dégradé en background des cartes)
+    - `border` : couleur de bordure RGBA
+    - `badge` : classes tailwind pour le badge de rareté
+    - `color` : couleur solide officielle CS2 (pour barre supérieure / accents)
+    """
     name = str(item_name).lower()
     cat = str(category).lower()
-    rar = str(raw_rarity).lower()
+    rar = str(raw_rarity or "").strip().lower()
 
-    # 1. Industrial Grade (Bleu clair / Ciel) - Prioritaire sur les noms spécifiques
-    if "industrial" in rar or "lightblue" in rar or "light blue" in rar or any(k in name for k in ["water sigil"]):
-        return {
-            "rarity_name": "Industrial",
-            "bg": "rgba(14, 165, 233, 0.18)",
-            "border": "rgba(14, 165, 233, 0.5)",
-            "badge": "bg-sky-500/30 text-sky-300 border border-sky-500/50"
-        }
+    # Couteaux et Gants -> Extraordinary (doré) quoi qu'il arrive
+    knife_cats = ("couteaux", "knives")
+    glove_cats = ("gants", "gloves")
+    if cat in knife_cats or cat in glove_cats or "★" in name:
+        result = RARITY_MAP["extraordinary"]
+    elif rar in RARITY_MAP:
+        result = RARITY_MAP[rar]
+    else:
+        result = DEFAULT_RARITY
 
-    # 2. Consumer Grade (Gris / Blanc) - Prioritaire sur les noms spécifiques
-    if "consumer" in rar or "white" in rar or any(k in name for k in ["sand dune", "alcove", "storm", "silver"]):
-        return {
-            "rarity_name": "Consumer",
-            "bg": "rgba(156, 163, 175, 0.15)",
-            "border": "rgba(156, 163, 175, 0.4)",
-            "badge": "bg-gray-500/30 text-gray-300 border border-gray-400/50"
-        }
-
-    # 3. Couteaux et Gants -> Doré / Légendaire
-    if cat in ["couteaux", "gants", "knives", "gloves"] or any(k in rar for k in ["extraordinary", "gold", "rare special", "knife"]) or "★" in name:
-        return {
-            "rarity_name": "Extraordinary",
-            "bg": "rgba(255, 215, 0, 0.12)",
-            "border": "rgba(255, 215, 0, 0.4)",
-            "badge": "bg-yellow-500/25 text-yellow-300 border border-yellow-500/40"
-        }
-
-    # 4. Covert (Rouge vif)
-    if "covert" in rar or "red" in rar or any(k in name for k in ["bloodsport", "asiimov", "empress", "neo-noir", "fade", "howl", "fire serpent", "printstream"]):
-        return {
-            "rarity_name": "Covert",
-            "bg": "rgba(239, 68, 68, 0.15)",
-            "border": "rgba(239, 68, 68, 0.45)",
-            "badge": "bg-red-600/30 text-red-300 border border-red-500/50"
-        }
-
-    # 5. Classified (Rose / Magenta distinct)
-    if "classified" in rar or "pink" in rar or any(k in name for k in ["redline", "desolate space", "hyper beast"]):
-        return {
-            "rarity_name": "Classified",
-            "bg": "rgba(236, 72, 153, 0.15)",
-            "border": "rgba(236, 72, 153, 0.45)",
-            "badge": "bg-pink-600/30 text-pink-300 border border-pink-500/50"
-        }
-
-    # 6. Restricted (Violet)
-    if "restricted" in rar or "purple" in rar or any(k in name for k in ["slate", "atheris", "water elemental"]):
-        return {
-            "rarity_name": "Restricted",
-            "bg": "rgba(168, 85, 247, 0.15)",
-            "border": "rgba(168, 85, 247, 0.45)",
-            "badge": "bg-purple-600/30 text-purple-300 border border-purple-500/50"
-        }
-
-    # 7. Mil-Spec Grade (Bleu foncé)
-    if "milspec" in rar or "mil-spec" in rar or "blue" in rar or any(k in name for k in ["safari mesh", "magnesium", "iron work"]):
-        return {
-            "rarity_name": "Mil-Spec",
-            "bg": "rgba(59, 130, 246, 0.15)",
-            "border": "rgba(59, 130, 246, 0.45)",
-            "badge": "bg-blue-600/30 text-blue-300 border border-blue-500/50"
-        }
-
-    # Valeur par défaut de sécurité
     return {
-        "rarity_name": "Consumer",
-        "bg": "rgba(156, 163, 175, 0.15)",
-        "border": "rgba(156, 163, 175, 0.4)",
-        "badge": "bg-gray-500/30 text-gray-300 border border-gray-400/50"
+        "rarity_name": result[0],
+        "color": result[1],
+        "bg": result[2],
+        "border": result[3],
+        "badge": result[4],
     }

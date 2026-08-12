@@ -76,7 +76,9 @@
 
 .modal-left {
   padding: 24px;
-  background-image: radial-gradient(circle at center top, var(--rarity-bg, transparent) 0%, transparent 60%);
+  background-image:
+    radial-gradient(ellipse 100% 60% at center top, var(--rarity-bg, transparent) 0%, transparent 60%),
+    linear-gradient(to bottom, var(--rarity-bg, transparent) 0%, transparent 50%);
   border-right: 1px solid var(--border);
 }
 

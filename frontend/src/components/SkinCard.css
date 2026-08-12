@@ -27,18 +27,22 @@
 }
 
 .skin-card:hover::before {
-  background: var(--rarity-border);
+  background: var(--rarity-color);
 }
 
 .skin-card-image-wrap {
   position: relative;
   background-color: var(--bg-tertiary);
-  background-image: radial-gradient(circle at center, var(--rarity-bg) 0%, transparent 70%);
+  /* Dégradé diffus de la couleur de rareté en arrière-plan (style CSFloat) */
+  background-image:
+    radial-gradient(ellipse 90% 70% at center 30%, var(--rarity-bg) 0%, transparent 70%),
+    linear-gradient(to bottom, var(--rarity-bg) 0%, transparent 45%);
   height: 150px;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 12px;
+  border-bottom: 1px solid var(--rarity-border);
 }
 
 .skin-card-image {

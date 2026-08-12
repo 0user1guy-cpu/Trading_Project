@@ -126,7 +126,7 @@ def get_items(
 
     items = []
     for r in rows:
-        wear_label, f_val = extract_wear_and_float(r["item_name"], r["float_val"])
+        wear_label, f_val = extract_wear_and_float(r["item_name"], r["float_val"], r["wear"])
         cat = r["category"] or clean_category(r["item_name"])
         rarity_info = get_rarity_style(r["item_name"], cat, r["rarity"])
         items.append({
@@ -138,6 +138,7 @@ def get_items(
             "price": r["price"],
             "platform": r["platform"],
             "rarity": rarity_info.get("rarity_name", "Consumer"),
+            "rarity_color": rarity_info.get("color", "#b0c3d9"),
             "rarity_bg": rarity_info.get("bg", "rgba(156, 163, 175, 0.15)"),
             "rarity_border": rarity_info.get("border", "rgba(156, 163, 175, 0.4)"),
             "rarity_badge": rarity_info.get("badge", "bg-gray-500/30 text-gray-300 border border-gray-400/50"),
@@ -173,7 +174,7 @@ def get_item_detail(item_id: int):
     if not row:
         raise HTTPException(status_code=404, detail="Item non trouvé")
 
-    wear_label, f_val = extract_wear_and_float(row["item_name"], row["float_val"])
+    wear_label, f_val = extract_wear_and_float(row["item_name"], row["float_val"], row["wear"])
     cat = row["category"] or clean_category(row["item_name"])
     rarity_info = get_rarity_style(row["item_name"], cat, row["rarity"])
 
@@ -186,6 +187,7 @@ def get_item_detail(item_id: int):
         "price": row["price"],
         "platform": row["platform"],
         "rarity": rarity_info.get("rarity_name", "Consumer"),
+        "rarity_color": rarity_info.get("color", "#b0c3d9"),
         "rarity_bg": rarity_info.get("bg", "rgba(156, 163, 175, 0.15)"),
         "rarity_border": rarity_info.get("border", "rgba(156, 163, 175, 0.4)"),
         "rarity_badge": rarity_info.get("badge", "bg-gray-500/30 text-gray-300 border border-gray-400/50"),

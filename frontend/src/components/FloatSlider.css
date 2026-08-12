@@ -1,0 +1,82 @@
+.float-slider {
+  user-select: none;
+  padding: 4px 0;
+}
+
+.float-slider-bar {
+  position: relative;
+  height: 8px;
+  border-radius: 4px;
+  overflow: visible;
+  cursor: pointer;
+  background: #0d1117;
+}
+
+.float-slider-segment {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  opacity: 0.9;
+}
+
+/* Première moitié arrondie à gauche, dernière à droite */
+.float-slider-segment:first-child { border-radius: 4px 0 0 4px; }
+.float-slider-segment:last-child  { border-radius: 0 4px 4px 0; }
+
+/* Voiles assombris hors de la sélection */
+.float-slider-dim {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: rgba(13, 17, 23, 0.72);
+  pointer-events: none;
+}
+.float-slider-dim.left  { left: 0; border-radius: 4px 0 0 4px; }
+.float-slider-dim.right { right: 0; border-radius: 0 4px 4px 0; }
+
+.float-slider-thumb {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  cursor: grab;
+  z-index: 2;
+}
+
+.float-slider-thumb:active {
+  cursor: grabbing;
+}
+
+.float-slider-thumb-handle {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #e6edf3;
+  border: 2px solid #0d1117;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.float-slider-thumb:hover .float-slider-thumb-handle {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 4px rgba(88, 166, 255, 0.2);
+}
+
+.float-slider-labels {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 10px;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  color: var(--text-muted);
+}
+
+.float-slider-value {
+  color: var(--text-primary);
+  font-weight: 600;
+  background-color: var(--bg-tertiary);
+  padding: 2px 8px;
+  border-radius: 8px;
+}

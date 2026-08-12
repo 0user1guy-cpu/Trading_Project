@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Navbar from './components/Navbar'
+import CategoryBar from './components/CategoryBar'
 import FilterSidebar from './components/FilterSidebar'
 import MarketGrid from './components/MarketGrid'
 import './App.css'
@@ -31,7 +32,12 @@ export default function App() {
         {currentPage === 'market' ? (
           <>
             <FilterSidebar filters={filters} onFilterChange={setFilters} />
-            <MarketGrid filters={filters} setFilters={setFilters} />
+            <div className="market-main">
+              <div className="market-toolbar">
+                <CategoryBar filters={filters} onFilterChange={setFilters} />
+              </div>
+              <MarketGrid filters={filters} setFilters={setFilters} />
+            </div>
           </>
         ) : (
           <div className="app-placeholder">

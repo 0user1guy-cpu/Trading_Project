@@ -1,14 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchCategories } from '../api'
+import FloatSlider from './FloatSlider'
 import './FilterSidebar.css'
-
-const WEAR_OPTIONS = [
-  { code: 'FN', label: 'Factory New', range: '0.00 - 0.07' },
-  { code: 'MW', label: 'Minimal Wear', range: '0.07 - 0.15' },
-  { code: 'FT', label: 'Field-Tested', range: '0.15 - 0.38' },
-  { code: 'WW', label: 'Well-Worn', range: '0.38 - 0.45' },
-  { code: 'BS', label: 'Battle-Scarred', range: '0.45 - 1.00' },
-]
 
 const SORT_OPTIONS = [
   { value: 'price_asc', label: 'Price: Low to High' },
@@ -39,10 +32,6 @@ export default function FilterSidebar({ filters, onFilterChange }) {
     onFilterChange({ ...filters, [key]: value, page: 1 })
   }
 
-  const toggleWear = (code) => {
-    onFilterChange({ ...filters, wear: filters.wear === code ? null : code, page: 1 })
-  }
-
   return (
     <aside className="filter-sidebar">
       {/* Recherche */}
@@ -55,29 +44,6 @@ export default function FilterSidebar({ filters, onFilterChange }) {
           value={filters.q || ''}
           onChange={(e) => update('q', e.target.value)}
         />
-      </div>
-
-      {/* Catégories */}
-      <div className="filter-section">
-        <div className="filter-section-title">Category</div>
-        <div className="filter-category-list">
-          <button
-            className={`filter-category-item ${(!filters.category || filters.category === 'Tous') ? 'active' : ''}`}
-            onClick={() => update('category', null)}
-          >
-            <span>Tous</span>
-          </button>
-          {categories.filter(c => c.category !== 'Tous').map((cat) => (
-            <button
-              key={cat.category}
-              className={`filter-category-item ${filters.category === cat.category ? 'active' : ''}`}
-              onClick={() => update('category', cat.category)}
-            >
-              <span>{cat.category}</span>
-              {cat.count && <span className="filter-category-count">{cat.count.toLocaleString()}</span>}
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* Prix */}
@@ -118,20 +84,21 @@ export default function FilterSidebar({ filters, onFilterChange }) {
         </div>
       </div>
 
-      {/* Float / Wear */}
+      {/* Float / Wear — slider double curseur style CSFloat */}
       <div className="filter-section">
         <div className="filter-section-title">Wear / Float</div>
-        <div className="filter-wear-list">
-          {WEAR_OPTIONS.map((wear) => (
-            <button
-              key={wear.code}
-              className={`filter-wear-item ${filters.wear === wear.code ? 'active' : ''}`}
-              onClick={() => toggleWear(wear.code)}
-            >
-              <span className="filter-wear-code">{wear.code}</span>
-              <span className="filter-wear-label">{wear.label}</span>
-            </button>
-          ))}
+        <FloatSlider
+          min={0}
+          max={1}
+          value={[filters.float_min ?? 0, filters.float_max ?? 1]}
+          onChange={([low, high]) => onFilterChange({ ...filters, float_min: low, float_max: high, page: 1 })}
+        />
+        <div className="filter-wear-presets">
+          <button className={`filter-wear-chip ${filters.wear === 'FN' ? 'active' : ''}`} onClick={() => update('wear', filters.wear === 'FN' ? null : 'FN')}>FN</button>
+          <button className={`filter-wear-chip ${filters.wear === 'MW' ? 'active' : ''}`} onClick={() => update('wear', filters.wear === 'MW' ? null : 'MW')}>MW</button>
+          <button className={`filter-wear-chip ${filters.wear === 'FT' ? 'active' : ''}`} onClick={() => update('wear', filters.wear === 'FT' ? null : 'FT')}>FT</button>
+          <button className={`filter-wear-chip ${filters.wear === 'WW' ? 'active' : ''}`} onClick={() => update('wear', filters.wear === 'WW' ? null : 'WW')}>WW</button>
+          <button className={`filter-wear-chip ${filters.wear === 'BS' ? 'active' : ''}`} onClick={() => update('wear', filters.wear === 'BS' ? null : 'BS')}>BS</button>
         </div>
       </div>
 
