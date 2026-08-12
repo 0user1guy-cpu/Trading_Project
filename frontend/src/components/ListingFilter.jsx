@@ -1,4 +1,5 @@
 import FilterSection from './FilterSection'
+import { useLanguage } from '../contexts/LanguageContext'
 import './ListingFilter.css'
 
 /**
@@ -7,14 +8,15 @@ import './ListingFilter.css'
  * est cosmétique (tous les items sont "Buy Now" par défaut).
  */
 const OPTIONS = [
-  { key: 'all', label: 'All' },
-  { key: 'buynow', label: 'Buy Now' },
-  { key: 'auction', label: 'Auction' },
+  { key: 'all', tKey: 'listing.all' },
+  { key: 'buynow', tKey: 'listing.buynow' },
+  { key: 'auction', tKey: 'listing.auction' },
 ]
 
 export default function ListingFilter({ value, onChange }) {
+  const { t } = useLanguage()
   return (
-    <FilterSection title="Listing">
+    <FilterSection title={t('filter.listing')}>
       <div className="listing-toggle">
         {OPTIONS.map((o) => (
           <button
@@ -22,7 +24,7 @@ export default function ListingFilter({ value, onChange }) {
             className={`listing-btn ${(value || 'all') === o.key ? 'active' : ''}`}
             onClick={() => onChange(o.key)}
           >
-            {o.label}
+            {t(o.tKey)}
           </button>
         ))}
       </div>

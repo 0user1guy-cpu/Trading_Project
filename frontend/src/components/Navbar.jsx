@@ -1,14 +1,17 @@
 import CurrencySelector from './CurrencySelector'
+import LanguageSelector from './LanguageSelector'
+import { useLanguage } from '../contexts/LanguageContext'
 import './Navbar.css'
 
 const NAV_LINKS = [
-  { label: 'Home', page: 'home' },
-  { label: 'Analytics', page: 'analytics' },
-  { label: 'Market', page: 'market' },
-  { label: 'Data Market', page: 'data-market' },
+  { key: 'home', page: 'home', tKey: 'nav.home' },
+  { key: 'analytics', page: 'analytics', tKey: 'nav.analytics' },
+  { key: 'market', page: 'market', tKey: 'nav.market' },
+  { key: 'data-market', page: 'data-market', tKey: 'nav.dataMarket' },
 ]
 
 export default function Navbar({ currentPage, onNavigate }) {
+  const { t } = useLanguage()
   return (
     <nav className="navbar">
       <div className="navbar-left">
@@ -22,30 +25,19 @@ export default function Navbar({ currentPage, onNavigate }) {
         <div className="navbar-links">
           {NAV_LINKS.map((link) => (
             <button
-              key={link.label}
+              key={link.key}
               className={`navbar-link ${currentPage === link.page ? 'active' : ''}`}
               onClick={() => onNavigate(link.page)}
             >
-              {link.label}
+              {t(link.tKey)}
             </button>
           ))}
         </div>
       </div>
       <div className="navbar-right">
         <CurrencySelector />
-        <div className="navbar-selector">
-          <span className="navbar-selector-value">FR</span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M7 10l5 5 5-5z" />
-          </svg>
-        </div>
-        <div className="navbar-selector">
-          <span className="navbar-selector-value">FR</span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M7 10l5 5 5-5z" />
-          </svg>
-        </div>
-        <button className="navbar-login-btn">Sign In</button>
+        <LanguageSelector />
+        <button className="navbar-login-btn">{t('nav.signIn')}</button>
       </div>
     </nav>
   )

@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { fetchItems } from '../api'
+import { useLanguage } from '../contexts/LanguageContext'
 import SkinCard from './SkinCard'
 import ItemModal from './ItemModal'
 import './MarketGrid.css'
 
 export default function MarketGrid({ filters, setFilters }) {
+  const { t } = useLanguage()
   const [data, setData] = useState({ items: [], total: 0, total_pages: 0, page: 1 })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -68,11 +70,11 @@ export default function MarketGrid({ filters, setFilters }) {
     <div className="market-grid-container">
       <div className="market-grid-header">
         <div className="market-results-count">
-          {loading ? 'Loading...' : `${data.total.toLocaleString()} items`}
+          {loading ? t('grid.loading') : `${data.total.toLocaleString()} ${t('grid.items')}`}
         </div>
       </div>
 
-      {error && <div className="market-error">Failed to load: {error}</div>}
+      {error && <div className="market-error">{t('grid.error')} {error}</div>}
 
       {loading && data.items.length === 0 ? (
         <div className="market-grid">
@@ -91,7 +93,7 @@ export default function MarketGrid({ filters, setFilters }) {
       {!loading && data.items.length === 0 && !error && (
         <div className="market-empty">
           <span className="market-empty-icon">🔍</span>
-          <p>No items match your filters.</p>
+          <p>{t('grid.noResults')}</p>
         </div>
       )}
 
@@ -103,17 +105,17 @@ export default function MarketGrid({ filters, setFilters }) {
             disabled={data.page <= 1}
             onClick={() => handlePageChange(data.page - 1)}
           >
-            ← Prev
+            {t('grid.prev')}
           </button>
           <span className="market-page-info">
-            Page {data.page} / {data.total_pages}
+            {t('grid.page')} {data.page} / {data.total_pages}
           </span>
           <button
             className="market-page-btn"
             disabled={data.page >= data.total_pages}
             onClick={() => handlePageChange(data.page + 1)}
           >
-            Next →
+            {t('grid.next')}
           </button>
         </div>
       )}
