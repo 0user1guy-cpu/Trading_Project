@@ -5,7 +5,7 @@
 > (voir `lance/README.md`) pour recréer le projet à l'identique dans une
 > nouvelle conversation.
 
-**Généré le :** 12 August 2026 à 05:40 UTC  
+**Généré le :** 12 August 2026 à 21:08 UTC  
 **Dépôt :** `0user1guy-cpu/Trading_Project`  
 **Branche source :** `main` (après PR #2 mergée)
 
@@ -361,11 +361,20 @@ DB_PATH = os.path.abspath(
 
 
 def clean_category(item_name: str, raw_category: str = "") -> str:
+    """Retourne la catégorie canonique.
+
+    La catégorie est désormais stockée proprement en DB par fetcher.py (basée
+    sur le `type` de l'API openskin /v1/items). On fait confiance à la valeur
+    stockée ; le fallback heuristique ci-dessous ne sert que si la colonne est
+    vide/None (vieille DB).
+    """
+    if raw_category and raw_category.strip() and raw_category != "Autres":
+        return raw_category
+
     name = str(item_name).lower()
 
     if "sticker" in name or "patch" in name or "graffiti" in name:
         return "Stickers"
-
     if "case" in name or "capsule" in name or "package" in name:
         return "Caisses & Capsules"
 
@@ -384,50 +393,72 @@ def clean_category(item_name: str, raw_category: str = "") -> str:
     return "Armes"
 
 
-def extract_wear_and_float(name: str, raw_float: Optional[float] = None):
+# Valeur float médiane par wear (cohérent avec utils/fetcher.py).
+WEAR_TO_FLOAT = {
+    "Factory New": 0.03,
+    "Minimal Wear": 0.10,
+    "Field-Tested": 0.25,
+    "Well-Worn": 0.40,
+    "Battle-Scarred": 0.70,
+}
+
+
+def extract_wear_and_float(name: str, raw_float: Optional[float] = None,
+                           stored_wear: Optional[str] = None):
+    """Retourne (wear, float).
+
+    Priorité :
+      1. `stored_wear` (colonne `wear` de la DB, désormais remplie proprement
+         par fetcher.py depuis l'exterior de l'API openskin).
+      2. Wear déduit du nom (fallback).
+      3. Wear déduit du float (dernier recours).
+
+    Le float retourné est :
+      - le `raw_float` de la DB s'il est valide (et pas le 0.05 constant
+        historique), sinon
+      - la valeur médiane du wear détecté.
+    """
+    # --- Wear : priorité à la valeur stockée ---
     name_lower = name.lower()
-
-    # 1. Priorité au wear explicite dans le nom (la source OpenSkin fournit un float
-    #    parfois constant/inexact, donc le nom reste la source de vérité pour le wear)
-    name_wear = None
-    if "factory new" in name_lower:
-        name_wear = "Factory New"
+    if stored_wear and stored_wear.strip() and stored_wear != "Standard":
+        wear = stored_wear.strip()
+    elif "factory new" in name_lower:
+        wear = "Factory New"
     elif "minimal wear" in name_lower:
-        name_wear = "Minimal Wear"
+        wear = "Minimal Wear"
     elif "field-tested" in name_lower:
-        name_wear = "Field-Tested"
+        wear = "Field-Tested"
     elif "well-worn" in name_lower:
-        name_wear = "Well-Worn"
+        wear = "Well-Worn"
     elif "battle-scarred" in name_lower:
-        name_wear = "Battle-Scarred"
+        wear = "Battle-Scarred"
+    else:
+        wear = None
 
-    # 2. Détermine le float réel (utilise raw_float s'il est valide, sinon une
-    #    valeur médiane correspondant au wear détecté dans le nom)
-    f_val = 0.05
+    # --- Float : valide la valeur stockée, sinon médiane du wear ---
+    f_val = None
     try:
         if raw_float is not None and str(raw_float).strip() not in ["", "None", "N/A", "nan"]:
             parsed = float(str(raw_float).replace(",", "."))
-            if 0.0 < parsed <= 1.0:
+            if 0.0 <= parsed <= 1.0:
                 f_val = parsed
     except (ValueError, TypeError):
         pass
 
-    if name_wear:
-        # Si le float semble inexact (constant à 0.05), on prend une valeur médiane
-        # du range de wear pour l'affichage de la barre de float
-        median_floats = {
-            "Factory New": 0.03,
-            "Minimal Wear": 0.10,
-            "Field-Tested": 0.25,
-            "Well-Worn": 0.40,
-            "Battle-Scarred": 0.70,
-        }
-        if f_val == 0.05 and name_wear != "Factory New":
-            f_val = median_floats[name_wear]
-        return name_wear, f_val
+    if wear:
+        # Si le float semble être le placeholder 0.05 mais que le wear n'est pas
+        # Factory New, on prend la médiane du wear pour un affichage réaliste.
+        if f_val is None or (f_val == 0.05 and wear != "Factory New"):
+            f_val = WEAR_TO_FLOAT.get(wear, 0.05)
+        return wear, round(f_val, 4)
 
-    # 3. Fallback : déduire le wear du float
-    if 0.0 <= f_val <= 1.0:
+    # Si l'API a explicitement marqué "Standard" (stickers, cases, agents...),
+    # on ne déduit pas un wear depuis le float — on garde Standard.
+    if stored_wear and stored_wear.strip() == "Standard":
+        return "Standard", 0.05
+
+    # Fallback : déduire le wear du float (vieille DB sans stored_wear)
+    if f_val is not None and 0.0 <= f_val <= 1.0:
         if f_val < 0.07:
             wear = "Factory New"
         elif f_val < 0.15:
@@ -438,7 +469,7 @@ def extract_wear_and_float(name: str, raw_float: Optional[float] = None):
             wear = "Well-Worn"
         else:
             wear = "Battle-Scarred"
-        return wear, f_val
+        return wear, round(f_val, 4)
 
     return "Standard", 0.05
 
@@ -509,6 +540,11 @@ def get_items(
     price_min: Optional[float] = Query(None, ge=0),
     price_max: Optional[float] = Query(None, ge=0),
     wear: Optional[str] = Query(None, description="FN, MW, FT, WW, BS"),
+    stattrak: Optional[bool] = Query(None, description="Filtrer StatTrak™"),
+    souvenir: Optional[bool] = Query(None, description="Filtrer Souvenir"),
+    collection: Optional[str] = Query(None, description="Nom de collection"),
+    pattern: Optional[str] = Query(None, description="Motif: fade, doppler, marble..."),
+    listing: Optional[str] = Query(None, description="all, buynow, auction (cosmétique)"),
     sort: str = Query("price_asc"),
     page: int = Query(1, ge=1),
     page_size: int = Query(60, ge=1, le=120),
@@ -558,6 +594,44 @@ def get_items(
             where.append("float_val < ?")
             params.append(fmax)
 
+    # Special : StatTrak / Souvenir (déduit du nom, source de vérité openskin)
+    if stattrak is True:
+        where.append("LOWER(item_name) LIKE '%stattrak%'")
+    if souvenir is True:
+        where.append("LOWER(item_name) LIKE '%souvenir%'")
+    if stattrak is False and souvenir is False:
+        # "Normal" = ni StatTrak ni Souvenir
+        where.append("LOWER(item_name) NOT LIKE '%stattrak%'")
+        where.append("LOWER(item_name) NOT LIKE '%souvenir%'")
+
+    # Collection : recherche des mots-clés de la collection dans le nom de l'item
+    if collection and collection.strip():
+        from utils.collections import collection_keywords
+        keywords = collection_keywords(collection.strip())
+        if keywords:
+            clauses = " OR ".join(["LOWER(item_name) LIKE ?" for _ in keywords])
+            where.append(f"({clauses})")
+            for kw in keywords:
+                params.append(f"%{kw.lower()}%")
+        else:
+            where.append("LOWER(item_name) LIKE ?")
+            params.append(f"%{collection.strip().lower()}%")
+
+    # Motif (pattern) : filtre par type de skin dans le nom
+    pattern_map = {
+        "fade": "Fade",
+        "doppler": "Doppler",
+        "marble": "Marble Fade",
+        "case_hardened": "Case Hardened",
+        "tiger": "Tiger Tooth",
+        "fade_blue": "Fade",
+    }
+    if pattern and pattern.strip():
+        key = pattern.strip().lower()
+        label = pattern_map.get(key, pattern.strip())
+        where.append("LOWER(item_name) LIKE ?")
+        params.append(f"%{label.lower()}%")
+
     where_clause = " AND ".join(where) if where else "1=1"
     order_clause = VALID_SORTS.get(sort, "price ASC")
     offset = (page - 1) * page_size
@@ -579,7 +653,7 @@ def get_items(
 
     items = []
     for r in rows:
-        wear_label, f_val = extract_wear_and_float(r["item_name"], r["float_val"])
+        wear_label, f_val = extract_wear_and_float(r["item_name"], r["float_val"], r["wear"])
         cat = r["category"] or clean_category(r["item_name"])
         rarity_info = get_rarity_style(r["item_name"], cat, r["rarity"])
         items.append({
@@ -591,6 +665,7 @@ def get_items(
             "price": r["price"],
             "platform": r["platform"],
             "rarity": rarity_info.get("rarity_name", "Consumer"),
+            "rarity_color": rarity_info.get("color", "#b0c3d9"),
             "rarity_bg": rarity_info.get("bg", "rgba(156, 163, 175, 0.15)"),
             "rarity_border": rarity_info.get("border", "rgba(156, 163, 175, 0.4)"),
             "rarity_badge": rarity_info.get("badge", "bg-gray-500/30 text-gray-300 border border-gray-400/50"),
@@ -626,7 +701,7 @@ def get_item_detail(item_id: int):
     if not row:
         raise HTTPException(status_code=404, detail="Item non trouvé")
 
-    wear_label, f_val = extract_wear_and_float(row["item_name"], row["float_val"])
+    wear_label, f_val = extract_wear_and_float(row["item_name"], row["float_val"], row["wear"])
     cat = row["category"] or clean_category(row["item_name"])
     rarity_info = get_rarity_style(row["item_name"], cat, row["rarity"])
 
@@ -639,6 +714,7 @@ def get_item_detail(item_id: int):
         "price": row["price"],
         "platform": row["platform"],
         "rarity": rarity_info.get("rarity_name", "Consumer"),
+        "rarity_color": rarity_info.get("color", "#b0c3d9"),
         "rarity_bg": rarity_info.get("bg", "rgba(156, 163, 175, 0.15)"),
         "rarity_border": rarity_info.get("border", "rgba(156, 163, 175, 0.4)"),
         "rarity_badge": rarity_info.get("badge", "bg-gray-500/30 text-gray-300 border border-gray-400/50"),
@@ -700,6 +776,13 @@ def get_stats():
 @app.get("/api/health")
 def health():
     return {"status": "ok", "db_path": DB_PATH}
+
+
+@app.get("/api/collections")
+def get_collections():
+    """Liste des collections CS2 disponibles."""
+    from utils.collections import get_collections_list
+    return [{"name": c} for c in get_collections_list()]
 
 
 # ---------------------------------------------------------------------------
@@ -833,6 +916,7 @@ if __name__ == "__main__":
 import sqlite3
 import os
 import requests
+from collections import Counter
 
 try:
     from .database import DB_PATH
@@ -842,91 +926,238 @@ except ImportError:
     from database import DB_PATH
     from config import get_secret
 
+
+# ---------------------------------------------------------------------------
+# Mapping type openskin -> catégorie du projet (tri propre/logique)
+# ---------------------------------------------------------------------------
+TYPE_TO_CATEGORY = {
+    "weapon": "Armes",
+    "knife": "Couteaux",
+    "gloves": "Gants",
+    "case": "Caisses & Capsules",
+    "key": "Caisses & Capsules",
+    "sticker": "Stickers",
+    "patch": "Stickers",
+    "graffiti": "Stickers",
+    "agent": "Agents",
+    "music_kit": "Music Kits",
+    "other": "Autres",
+}
+
+
+# Valeur float médiane par wear. L'API /v1/items ne donne pas le float exact
+# par instance de skin (chaque exemplaire a son propre float), mais elle
+# fournit l'exterior (wear réel). On stocke un float médian réaliste du range
+# de wear correspondant — bien plus précis qu'un 0.05 constant pour tous.
+WEAR_TO_FLOAT = {
+    "Factory New": 0.03,
+    "Minimal Wear": 0.10,
+    "Field-Tested": 0.25,
+    "Well-Worn": 0.40,
+    "Battle-Scarred": 0.70,
+}
+
+
+def category_from_meta(item_type, item_name=""):
+    """Retourne la catégorie propre à partir du type openskin + nom."""
+    t = (item_type or "").lower()
+    name = (item_name or "").lower()
+
+    # Cas spécial : les "sticker capsules" sont des cases, pas des stickers.
+    if t == "case" or ("capsule" in name and "sticker" in name):
+        return "Caisses & Capsules"
+
+    # Priorité au type retourné par l'API (source de vérité).
+    if t in TYPE_TO_CATEGORY:
+        return TYPE_TO_CATEGORY[t]
+
+    # Fallback heuristique sur le nom (si type absent/None).
+    if "sticker" in name or "patch" in name or "graffiti" in name:
+        return "Stickers"
+    if "case" in name or "capsule" in name or "key" in name:
+        return "Caisses & Capsules"
+    if "gloves" in name or "hand wraps" in name:
+        return "Gants"
+    if "★" in (item_name or "") or "knife" in name:
+        return "Couteaux"
+    if "music kit" in name:
+        return "Music Kits"
+    return "Autres"
+
+
+def wear_and_float_from_meta(exterior, name=""):
+    """Retourne (wear, float) à partir de l'exterior openskin + nom.
+
+    L'API /v1/items fournit l'exterior (wear réel) pour les armes/couteaux/
+    gants : c'est la source de vérité. Le float stocké est une valeur médiane
+    réaliste du range de wear (l'API ne donne pas le float exact par instance).
+    """
+    ext = (exterior or "").strip()
+    if ext in WEAR_TO_FLOAT:
+        return ext, WEAR_TO_FLOAT[ext]
+
+    # Fallback : déduire du nom
+    n = (name or "").lower()
+    if "factory new" in n:
+        return "Factory New", WEAR_TO_FLOAT["Factory New"]
+    if "minimal wear" in n:
+        return "Minimal Wear", WEAR_TO_FLOAT["Minimal Wear"]
+    if "field-tested" in n:
+        return "Field-Tested", WEAR_TO_FLOAT["Field-Tested"]
+    if "well-worn" in n:
+        return "Well-Worn", WEAR_TO_FLOAT["Well-Worn"]
+    if "battle-scarred" in n:
+        return "Battle-Scarred", WEAR_TO_FLOAT["Battle-Scarred"]
+
+    # Pas de wear (stickers, cases, agents...) → float neutre
+    return "Standard", 0.05
+
+
+def fetch_metadata_map():
+    """Récupère les métadonnées de tous les items (type, exterior, rarity, weapon).
+
+    Endpoint paginé : /v1/items?limit=100&page=N. Retourne un dict
+    { item_name: meta } pour croiser avec /v1/prices/all.
+    """
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "Accept-Encoding": "gzip",
+    }
+    api_key = get_secret("OPENSKIN_API_KEY")
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
+    meta = {}
+    page = 1
+    while page <= 500:
+        url = f"https://api.openskin.dev/v1/items?limit=100&page={page}"
+        try:
+            r = requests.get(url, headers=headers, timeout=30)
+        except requests.RequestException as e:
+            print(f"   ⚠️  Erreur métadonnées page {page} : {e}")
+            break
+        if r.status_code != 200:
+            print(f"   ⚠️  Métadonnées page {page} : HTTP {r.status_code}")
+            break
+        data = r.json().get("data", [])
+        if not data:
+            break
+        for d in data:
+            name = d.get("name")
+            if name:
+                meta[name] = d
+        if len(data) < 100:
+            break
+        if page % 50 == 0:
+            print(f"   ... métadonnées : {len(meta)} items récupérés")
+        page += 1
+    print(f"   ✅ Métadonnées : {len(meta)} items.")
+    return meta
+
+
 def fetch_and_store_market_data():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    
+
     # Nettoyage de l'ancienne table pour repartir sur des bases propres
     cursor.execute("DELETE FROM market_offers;")
     conn.commit()
-    
-    print("Récupération du catalogue global depuis openskin.dev...")
-    
+
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-        "Accept-Encoding": "gzip"
+        "Accept-Encoding": "gzip",
     }
-    # Clé API optionnelle : utilisée si OPENSKIN_API_KEY est définie dans .env
     api_key = get_secret("OPENSKIN_API_KEY")
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
-    
+
+    print("Étape 1/2 : Récupération des métadonnées (type, wear, rarity)...")
+    meta_map = fetch_metadata_map()
+
+    print("\nÉtape 2/2 : Récupération des prix depuis openskin.dev...")
     try:
-        # Utilisation de /v1/prices/all pour récupérer tous les items groupés et packés en une seule requête optimisée
-        response = requests.get("https://api.openskin.dev/v1/prices/all", headers=headers, timeout=60)
-        
-        if response.status_code == 200:
-            payload = response.json()
-            data_dict = payload.get("data", {})
-            
-            print(f"Données reçues : {len(data_dict)} objets. Traitement en cours...")
-            
-            bulk_data = []
-            for item_name, details in data_dict.items():
-                icon_url = details.get("icon_url", "")
-                
-                # Recherche du meilleur prix (lowest_ask) parmi les plateformes disponibles
-                lowest_ask_info = details.get("lowest_ask", {})
-                best_price = lowest_ask_info.get("price", 0.0)
-                best_platform = lowest_ask_info.get("marketplace", "openskin")
-                
-                # Extraction d'une source de repli si lowest_ask est vide
-                if not best_price or best_price == 0.0:
-                    for source in ["csfloat", "skinport", "buff", "steam"]:
-                        if source in details and "ask" in details[source]:
-                            best_price = details[source]["ask"]
-                            best_platform = source
-                            break
-                
-                # Détermination simple de la catégorie selon le nom ou les données
-                category = "Armes"
-                if "★" in item_name:
-                    category = "Couteaux"
-                elif "Gloves" in item_name or "Gants" in item_name:
-                    category = "Gants"
-                elif "Case" in item_name or "Capsule" in item_name:
-                    category = "Caisses & Capsules"
-                
-                bulk_data.append((
-                    item_name,
-                    category,
-                    "Standard / Mixed",
-                    0.05,
-                    float(best_price or 0.0),
-                    str(best_platform).capitalize(),
-                    "milspec",
-                    icon_url,
-                    f"{best_price} $",
-                    "Actif"
-                ))
-            
-            # Insertion par lot (batch insertion) pour optimiser les performances de SQLite
-            cursor.executemany("""
-                INSERT OR IGNORE INTO market_offers 
-                (item_name, category, wear, float_val, price, platform, rarity, icon_url, history_price, volume)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, bulk_data)
-            
-            conn.commit()
-            print(f"Succès ! {len(bulk_data)} skins synchronisés et enregistrés.")
-        else:
-            print(f"Erreur API : Code {response.status_code}")
-            
+        response = requests.get(
+            "https://api.openskin.dev/v1/prices/all", headers=headers, timeout=90
+        )
+        if response.status_code != 200:
+            print(f"Erreur API prix : Code {response.status_code}")
+            conn.close()
+            return
+
+        payload = response.json()
+        data_dict = payload.get("data", {})
+        print(f"Données reçues : {len(data_dict)} objets. Traitement en cours...")
+
+        bulk_data = []
+        for item_name, details in data_dict.items():
+            icon_url = details.get("icon_url", "")
+            meta = meta_map.get(item_name, {})
+
+            # --- Meilleur prix (lowest_ask, fallback sur les plateformes) ---
+            lowest_ask_info = details.get("lowest_ask", {}) or {}
+            best_price = lowest_ask_info.get("price", 0.0)
+            best_platform = lowest_ask_info.get("marketplace", "openskin")
+            if not best_price or best_price == 0.0:
+                for source in ["csfloat", "skinport", "buff", "youpin", "steam"]:
+                    src = details.get(source, {})
+                    if isinstance(src, dict) and src.get("ask"):
+                        best_price = src["ask"]
+                        best_platform = source
+                        break
+
+            # --- Catégorie propre (basée sur le TYPE de l'API) ---
+            category = category_from_meta(meta.get("type"), item_name)
+
+            # --- Wear et float (basés sur l'EXTERIOR de l'API) ---
+            wear, f_val = wear_and_float_from_meta(meta.get("exterior"), item_name)
+
+            # --- Rareté (depuis les métadonnées, normalisée) ---
+            rarity = (meta.get("rarity") or "consumer grade").lower()
+
+            # --- Volume (liquidité steam si dispo) ---
+            steam = details.get("steam", {}) or {}
+            volume = steam.get("volume_24h")
+            volume_str = str(volume) if volume is not None else "Actif"
+
+            bulk_data.append((
+                item_name,
+                category,
+                wear,
+                round(f_val, 4),
+                float(best_price or 0.0),
+                str(best_platform).capitalize(),
+                rarity,
+                icon_url,
+                f"{best_price} $",
+                volume_str,
+            ))
+
+        # Insertion par lot
+        cursor.executemany("""
+            INSERT OR IGNORE INTO market_offers
+            (item_name, category, wear, float_val, price, platform, rarity, icon_url, history_price, volume)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, bulk_data)
+
+        conn.commit()
+
+        cats = Counter(row[1] for row in bulk_data)
+        print("\n✅ Synchronisation terminée :", len(bulk_data), "skins.")
+        print("   Répartition par catégorie :")
+        for cat, cnt in cats.most_common():
+            print(f"      {cat:<22} {cnt:>6}")
+
+        wears = Counter(row[2] for row in bulk_data if row[2] != "Standard")
+        print("   Répartition par wear (armes/couteaux/gants) :")
+        for w, cnt in wears.most_common():
+            print(f"      {w:<22} {cnt:>6}")
+
     except Exception as e:
         print(f"Erreur critique lors du fetch : {e}")
-        
-    conn.close()
+    finally:
+        conn.close()
+
 
 if __name__ == "__main__":
     fetch_and_store_market_data()
@@ -935,80 +1166,166 @@ if __name__ == "__main__":
 ### `utils/rarity_helper.py`
 
 ```python
+"""Détermine la rareté d'un skin et ses couleurs (style CSFloat).
+
+Couleurs officielles CS2 par rareté, avec un dégradé diffus pour le fond des
+cartes (background de la fenêtre de l'arme). La rareté provient désormais de
+l'API openskin /v1/items (champ `rarity`), normalisée en minuscules.
+"""
+
+# Mapping rareté -> (nom_affiché, couleur_solid, couleur_fond_rgba_diffus,
+#                    couleur_bordure_rgba, badge_tailwind)
+RARITY_MAP = {
+    "consumer grade": (
+        "Consumer",
+        "#b0c3d9",
+        "rgba(176, 195, 217, 0.18)",
+        "rgba(176, 195, 217, 0.45)",
+        "bg-slate-400/30 text-slate-200 border border-slate-400/50",
+    ),
+    "base grade": (
+        "Base Grade",
+        "#b0c3d9",
+        "rgba(176, 195, 217, 0.15)",
+        "rgba(176, 195, 217, 0.4)",
+        "bg-slate-400/30 text-slate-200 border border-slate-400/50",
+    ),
+    "industrial grade": (
+        "Industrial",
+        "#5e98d9",
+        "rgba(94, 152, 217, 0.18)",
+        "rgba(94, 152, 217, 0.5)",
+        "bg-sky-500/30 text-sky-300 border border-sky-500/50",
+    ),
+    "mil-spec grade": (
+        "Mil-Spec",
+        "#4b69ff",
+        "rgba(75, 105, 255, 0.18)",
+        "rgba(75, 105, 255, 0.5)",
+        "bg-blue-600/30 text-blue-300 border border-blue-500/50",
+    ),
+    "high grade": (
+        "High Grade",
+        "#4b69ff",
+        "rgba(75, 105, 255, 0.16)",
+        "rgba(75, 105, 255, 0.45)",
+        "bg-blue-600/30 text-blue-300 border border-blue-500/50",
+    ),
+    "remarkable": (
+        "Remarkable",
+        "#8847ff",
+        "rgba(136, 71, 255, 0.18)",
+        "rgba(136, 71, 255, 0.5)",
+        "bg-violet-600/30 text-violet-300 border border-violet-500/50",
+    ),
+    "restricted": (
+        "Restricted",
+        "#8847ff",
+        "rgba(136, 71, 255, 0.18)",
+        "rgba(136, 71, 255, 0.5)",
+        "bg-purple-600/30 text-purple-300 border border-purple-500/50",
+    ),
+    "exotic": (
+        "Exotic",
+        "#d32ce6",
+        "rgba(211, 44, 230, 0.18)",
+        "rgba(211, 44, 230, 0.5)",
+        "bg-fuchsia-600/30 text-fuchsia-300 border border-fuchsia-500/50",
+    ),
+    "classified": (
+        "Classified",
+        "#d32ce6",
+        "rgba(211, 44, 230, 0.18)",
+        "rgba(211, 44, 230, 0.5)",
+        "bg-pink-600/30 text-pink-300 border border-pink-500/50",
+    ),
+    "covert": (
+        "Covert",
+        "#eb4b4b",
+        "rgba(235, 75, 75, 0.18)",
+        "rgba(235, 75, 75, 0.5)",
+        "bg-red-600/30 text-red-300 border border-red-500/50",
+    ),
+    "contraband": (
+        "Contraband",
+        "#e4ae39",
+        "rgba(228, 174, 57, 0.18)",
+        "rgba(228, 174, 57, 0.5)",
+        "bg-amber-500/30 text-amber-300 border border-amber-500/50",
+    ),
+    "extraordinary": (
+        "Extraordinary",
+        "#ffd700",
+        "rgba(255, 215, 0, 0.15)",
+        "rgba(255, 215, 0, 0.45)",
+        "bg-yellow-500/25 text-yellow-300 border border-yellow-500/40",
+    ),
+    "superior": (
+        "Superior",
+        "#ffd700",
+        "rgba(255, 215, 0, 0.14)",
+        "rgba(255, 215, 0, 0.4)",
+        "bg-yellow-500/25 text-yellow-300 border border-yellow-500/40",
+    ),
+    "distinguished": (
+        "Distinguished",
+        "#8847ff",
+        "rgba(136, 71, 255, 0.16)",
+        "rgba(136, 71, 255, 0.45)",
+        "bg-purple-600/30 text-purple-300 border border-purple-500/50",
+    ),
+    "exceptional": (
+        "Exceptional",
+        "#4b69ff",
+        "rgba(75, 105, 255, 0.16)",
+        "rgba(75, 105, 255, 0.45)",
+        "bg-blue-600/30 text-blue-300 border border-blue-500/50",
+    ),
+    "master": (
+        "Master",
+        "#eb4b4b",
+        "rgba(235, 75, 75, 0.16)",
+        "rgba(235, 75, 75, 0.45)",
+        "bg-red-600/30 text-red-300 border border-red-500/50",
+    ),
+}
+
+DEFAULT_RARITY = (
+    "Consumer",
+    "rgba(176, 195, 217, 0.12)",
+    "rgba(176, 195, 217, 0.35)",
+    "bg-slate-400/25 text-slate-300 border border-slate-400/40",
+)
+
+
 def get_skin_rarity_and_style(item_name, category="", raw_rarity=""):
+    """Retourne {rarity_name, bg, border, badge, color} pour un item.
+
+    - `bg` : couleur de fond RGBA diffus (pour le dégradé en background des cartes)
+    - `border` : couleur de bordure RGBA
+    - `badge` : classes tailwind pour le badge de rareté
+    - `color` : couleur solide officielle CS2 (pour barre supérieure / accents)
+    """
     name = str(item_name).lower()
     cat = str(category).lower()
-    rar = str(raw_rarity).lower()
+    rar = str(raw_rarity or "").strip().lower()
 
-    # 1. Industrial Grade (Bleu clair / Ciel) - Prioritaire sur les noms spécifiques
-    if "industrial" in rar or "lightblue" in rar or "light blue" in rar or any(k in name for k in ["water sigil"]):
-        return {
-            "rarity_name": "Industrial",
-            "bg": "rgba(14, 165, 233, 0.18)",
-            "border": "rgba(14, 165, 233, 0.5)",
-            "badge": "bg-sky-500/30 text-sky-300 border border-sky-500/50"
-        }
+    # Couteaux et Gants -> Extraordinary (doré) quoi qu'il arrive
+    knife_cats = ("couteaux", "knives")
+    glove_cats = ("gants", "gloves")
+    if cat in knife_cats or cat in glove_cats or "★" in name:
+        result = RARITY_MAP["extraordinary"]
+    elif rar in RARITY_MAP:
+        result = RARITY_MAP[rar]
+    else:
+        result = DEFAULT_RARITY
 
-    # 2. Consumer Grade (Gris / Blanc) - Prioritaire sur les noms spécifiques
-    if "consumer" in rar or "white" in rar or any(k in name for k in ["sand dune", "alcove", "storm", "silver"]):
-        return {
-            "rarity_name": "Consumer",
-            "bg": "rgba(156, 163, 175, 0.15)",
-            "border": "rgba(156, 163, 175, 0.4)",
-            "badge": "bg-gray-500/30 text-gray-300 border border-gray-400/50"
-        }
-
-    # 3. Couteaux et Gants -> Doré / Légendaire
-    if cat in ["couteaux", "gants", "knives", "gloves"] or any(k in rar for k in ["extraordinary", "gold", "rare special", "knife"]) or "★" in name:
-        return {
-            "rarity_name": "Extraordinary",
-            "bg": "rgba(255, 215, 0, 0.12)",
-            "border": "rgba(255, 215, 0, 0.4)",
-            "badge": "bg-yellow-500/25 text-yellow-300 border border-yellow-500/40"
-        }
-
-    # 4. Covert (Rouge vif)
-    if "covert" in rar or "red" in rar or any(k in name for k in ["bloodsport", "asiimov", "empress", "neo-noir", "fade", "howl", "fire serpent", "printstream"]):
-        return {
-            "rarity_name": "Covert",
-            "bg": "rgba(239, 68, 68, 0.15)",
-            "border": "rgba(239, 68, 68, 0.45)",
-            "badge": "bg-red-600/30 text-red-300 border border-red-500/50"
-        }
-
-    # 5. Classified (Rose / Magenta distinct)
-    if "classified" in rar or "pink" in rar or any(k in name for k in ["redline", "desolate space", "hyper beast"]):
-        return {
-            "rarity_name": "Classified",
-            "bg": "rgba(236, 72, 153, 0.15)",
-            "border": "rgba(236, 72, 153, 0.45)",
-            "badge": "bg-pink-600/30 text-pink-300 border border-pink-500/50"
-        }
-
-    # 6. Restricted (Violet)
-    if "restricted" in rar or "purple" in rar or any(k in name for k in ["slate", "atheris", "water elemental"]):
-        return {
-            "rarity_name": "Restricted",
-            "bg": "rgba(168, 85, 247, 0.15)",
-            "border": "rgba(168, 85, 247, 0.45)",
-            "badge": "bg-purple-600/30 text-purple-300 border border-purple-500/50"
-        }
-
-    # 7. Mil-Spec Grade (Bleu foncé)
-    if "milspec" in rar or "mil-spec" in rar or "blue" in rar or any(k in name for k in ["safari mesh", "magnesium", "iron work"]):
-        return {
-            "rarity_name": "Mil-Spec",
-            "bg": "rgba(59, 130, 246, 0.15)",
-            "border": "rgba(59, 130, 246, 0.45)",
-            "badge": "bg-blue-600/30 text-blue-300 border border-blue-500/50"
-        }
-
-    # Valeur par défaut de sécurité
     return {
-        "rarity_name": "Consumer",
-        "bg": "rgba(156, 163, 175, 0.15)",
-        "border": "rgba(156, 163, 175, 0.4)",
-        "badge": "bg-gray-500/30 text-gray-300 border border-gray-400/50"
+        "rarity_name": result[0],
+        "color": result[1],
+        "bg": result[2],
+        "border": result[3],
+        "badge": result[4],
     }
 ```
 
@@ -1104,6 +1421,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 ```jsx
 import { useState } from 'react'
 import Navbar from './components/Navbar'
+import CategoryBar from './components/CategoryBar'
 import FilterSidebar from './components/FilterSidebar'
 import MarketGrid from './components/MarketGrid'
 import './App.css'
@@ -1116,6 +1434,13 @@ const DEFAULT_FILTERS = {
   price_min: null,
   price_max: null,
   wear: null,
+  stattrak: null,
+  souvenir: null,
+  collection: null,
+  pattern: null,
+  listing: 'all',
+  special: null,
+  stickers: null,
   sort: 'price_asc',
   page: 1,
 }
@@ -1135,7 +1460,12 @@ export default function App() {
         {currentPage === 'market' ? (
           <>
             <FilterSidebar filters={filters} onFilterChange={setFilters} />
-            <MarketGrid filters={filters} setFilters={setFilters} />
+            <div className="market-main">
+              <div className="market-toolbar">
+                <CategoryBar filters={filters} onFilterChange={setFilters} />
+              </div>
+              <MarketGrid filters={filters} setFilters={setFilters} />
+            </div>
           </>
         ) : (
           <div className="app-placeholder">
@@ -1183,6 +1513,29 @@ export default function App() {
   font-size: 14px;
   max-width: 400px;
   text-align: center;
+}
+
+/* Conteneur principal du Market (à droite de la sidebar) */
+.market-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Barre d'outils en haut de la page Market (catégories en popup, etc.) */
+.market-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  background-color: var(--bg-secondary);
+  position: sticky;
+  top: 56px;
+  z-index: 20;
+  flex-wrap: wrap;
 }
 ```
 
@@ -1284,6 +1637,10 @@ export async function fetchItemDetail(id) {
 
 export async function fetchCategories() {
   return fetchJSON(`${API_BASE}/categories`)
+}
+
+export async function fetchCollections() {
+  return fetchJSON(`${API_BASE}/collections`)
 }
 
 export async function fetchStats() {
@@ -1493,15 +1850,14 @@ export default function Navbar({ currentPage, onNavigate }) {
 ```jsx
 import { useEffect, useState } from 'react'
 import { fetchCategories } from '../api'
+import RangeSlider from './RangeSlider'
+import WearPopup from './WearPopup'
+import CollectionPopup from './CollectionPopup'
+import StickerFilter from './StickerFilter'
+import PatternsFilter from './PatternsFilter'
+import SpecialFilter from './SpecialFilter'
+import ListingFilter from './ListingFilter'
 import './FilterSidebar.css'
-
-const WEAR_OPTIONS = [
-  { code: 'FN', label: 'Factory New', range: '0.00 - 0.07' },
-  { code: 'MW', label: 'Minimal Wear', range: '0.07 - 0.15' },
-  { code: 'FT', label: 'Field-Tested', range: '0.15 - 0.38' },
-  { code: 'WW', label: 'Well-Worn', range: '0.38 - 0.45' },
-  { code: 'BS', label: 'Battle-Scarred', range: '0.45 - 1.00' },
-]
 
 const SORT_OPTIONS = [
   { value: 'price_asc', label: 'Price: Low to High' },
@@ -1519,6 +1875,8 @@ const PRICE_RANGES = [
   { label: '> $250', min: 250, max: null },
 ]
 
+const MAX_PRICE = 5000
+
 export default function FilterSidebar({ filters, onFilterChange }) {
   const [categories, setCategories] = useState([])
 
@@ -1532,8 +1890,19 @@ export default function FilterSidebar({ filters, onFilterChange }) {
     onFilterChange({ ...filters, [key]: value, page: 1 })
   }
 
-  const toggleWear = (code) => {
-    onFilterChange({ ...filters, wear: filters.wear === code ? null : code, page: 1 })
+  // Convertit la valeur du slider prix (0..MAX_PRICE) vers les filtres API.
+  // Si low=0 et high=MAX_PRICE, on ne filtre pas le prix (null).
+  const priceSliderValue = [
+    filters.price_min ?? 0,
+    filters.price_max ?? MAX_PRICE,
+  ]
+  const onPriceSlider = ([low, high]) => {
+    onFilterChange({
+      ...filters,
+      price_min: low > 0 ? low : null,
+      price_max: high < MAX_PRICE ? high : null,
+      page: 1,
+    })
   }
 
   return (
@@ -1550,32 +1919,17 @@ export default function FilterSidebar({ filters, onFilterChange }) {
         />
       </div>
 
-      {/* Catégories */}
-      <div className="filter-section">
-        <div className="filter-section-title">Category</div>
-        <div className="filter-category-list">
-          <button
-            className={`filter-category-item ${(!filters.category || filters.category === 'Tous') ? 'active' : ''}`}
-            onClick={() => update('category', null)}
-          >
-            <span>Tous</span>
-          </button>
-          {categories.filter(c => c.category !== 'Tous').map((cat) => (
-            <button
-              key={cat.category}
-              className={`filter-category-item ${filters.category === cat.category ? 'active' : ''}`}
-              onClick={() => update('category', cat.category)}
-            >
-              <span>{cat.category}</span>
-              {cat.count && <span className="filter-category-count">{cat.count.toLocaleString()}</span>}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Prix */}
+      {/* Prix — slider style CSFloat avec flèches + inputs */}
       <div className="filter-section">
         <div className="filter-section-title">Price</div>
+        <RangeSlider
+          variant="price"
+          min={0}
+          max={MAX_PRICE}
+          value={priceSliderValue}
+          onChange={onPriceSlider}
+          formatValue={(v) => `$${Math.round(v)}`}
+        />
         <div className="filter-price-inputs">
           <input
             type="number"
@@ -1611,21 +1965,85 @@ export default function FilterSidebar({ filters, onFilterChange }) {
         </div>
       </div>
 
-      {/* Float / Wear */}
+      {/* Float — section séparée avec dégradé couleur + flèches */}
       <div className="filter-section">
-        <div className="filter-section-title">Wear / Float</div>
-        <div className="filter-wear-list">
-          {WEAR_OPTIONS.map((wear) => (
-            <button
-              key={wear.code}
-              className={`filter-wear-item ${filters.wear === wear.code ? 'active' : ''}`}
-              onClick={() => toggleWear(wear.code)}
-            >
-              <span className="filter-wear-code">{wear.code}</span>
-              <span className="filter-wear-label">{wear.label}</span>
-            </button>
-          ))}
+        <div className="filter-section-title">Float</div>
+        <RangeSlider
+          variant="float"
+          min={0}
+          max={1}
+          value={[filters.float_min ?? 0, filters.float_max ?? 1]}
+          onChange={([low, high]) => onFilterChange({ ...filters, float_min: low, float_max: high, page: 1 })}
+          formatValue={(v) => v.toFixed(2)}
+        />
+        <div className="filter-price-inputs">
+          <input
+            type="number"
+            step="0.01"
+            className="filter-price-input"
+            placeholder="0.00"
+            value={filters.float_min ?? ''}
+            onChange={(e) => update('float_min', e.target.value || null)}
+          />
+          <span className="filter-price-separator">—</span>
+          <input
+            type="number"
+            step="0.01"
+            className="filter-price-input"
+            placeholder="1.00"
+            value={filters.float_max ?? ''}
+            onChange={(e) => update('float_max', e.target.value || null)}
+          />
         </div>
+      </div>
+
+      {/* Wear — popup initiales aligné sous Float, avec tooltip */}
+      <div className="filter-section">
+        <div className="filter-section-title">Wear</div>
+        <WearPopup
+          value={filters.wear}
+          onChange={(w) => update('wear', w)}
+        />
+      </div>
+
+      {/* Listing — All / Buy Now / Auction */}
+      <div className="filter-section">
+        <ListingFilter
+          value={filters.listing || 'all'}
+          onChange={(v) => update('listing', v)}
+        />
+      </div>
+
+      {/* Special — StatTrak / Souvenir / Highlight / Normal */}
+      <div className="filter-section">
+        <SpecialFilter
+          value={filters.special}
+          onChange={(v) => update('special', v)}
+        />
+      </div>
+
+      {/* Collection — popup */}
+      <div className="filter-section">
+        <CollectionPopup
+          value={filters.collection}
+          onChange={(c) => update('collection', c)}
+        />
+      </div>
+
+      {/* Stickers — 5 emplacements */}
+      <div className="filter-section">
+        <StickerFilter
+          value={filters.stickers}
+          onChange={(s) => update('stickers', s)}
+        />
+      </div>
+
+      {/* Patterns — Motif + Fade/Blue */}
+      <div className="filter-section">
+        <PatternsFilter
+          value={filters.pattern}
+          onChange={(p) => update('pattern', p)}
+        />
       </div>
 
       {/* Tri */}
@@ -1861,6 +2279,36 @@ export default function FilterSidebar({ filters, onFilterChange }) {
 .filter-sort-select:focus {
   border-color: var(--accent);
 }
+
+/* Chips de wear (raccourcis FN/MW/FT/WW/BS) sous le slider float */
+.filter-wear-presets {
+  display: flex;
+  gap: 5px;
+  margin-top: 12px;
+}
+
+.filter-wear-chip {
+  flex: 1;
+  padding: 5px 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: all 0.15s ease;
+}
+
+.filter-wear-chip:hover {
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+.filter-wear-chip.active {
+  color: var(--accent);
+  background-color: rgba(88, 166, 255, 0.15);
+  border-color: var(--accent);
+}
 ```
 
 ### `frontend/src/components/MarketGrid.jsx`
@@ -1888,10 +2336,34 @@ export default function MarketGrid({ filters, setFilters }) {
   const loadItems = useCallback(() => {
     setLoading(true)
     setError(null)
+    // Transforme les filtres structurés en paramètres API plats.
     const params = {
-      ...filters,
       q: debouncedQ,
+      category: filters.category,
+      float_min: filters.float_min,
+      float_max: filters.float_max,
+      price_min: filters.price_min,
+      price_max: filters.price_max,
+      wear: filters.wear,
+      sort: filters.sort,
+      page: filters.page,
       page_size: 60,
+      collection: filters.collection,
+      listing: filters.listing,
+    }
+    // Special : StatTrak / Souvenir / Normal
+    if (filters.special) {
+      params.stattrak = filters.special.stattrak ?? null
+      params.souvenir = filters.special.souvenir ?? null
+      // Si "Normal" seul (sans StatTrak/Souvenir), on exige ni l'un ni l'autre.
+      if (filters.special.normal && !filters.special.stattrak && !filters.special.souvenir) {
+        params.stattrak = false
+        params.souvenir = false
+      }
+    }
+    // Pattern : garde le chip sélectionné comme chaîne.
+    if (filters.pattern && filters.pattern.chip) {
+      params.pattern = filters.pattern.chip.toLowerCase().replace(/\s+/g, '_')
     }
     fetchItems(params)
       .then(setData)
@@ -2088,6 +2560,7 @@ export default function SkinCard({ item, onClick }) {
       style={{
         '--rarity-bg': item.rarity_bg,
         '--rarity-border': item.rarity_border,
+        '--rarity-color': item.rarity_color || '#b0c3d9',
       }}
       onClick={() => onClick(item)}
     >
@@ -2171,18 +2644,22 @@ export default function SkinCard({ item, onClick }) {
 }
 
 .skin-card:hover::before {
-  background: var(--rarity-border);
+  background: var(--rarity-color);
 }
 
 .skin-card-image-wrap {
   position: relative;
   background-color: var(--bg-tertiary);
-  background-image: radial-gradient(circle at center, var(--rarity-bg) 0%, transparent 70%);
+  /* Dégradé diffus de la couleur de rareté en arrière-plan (style CSFloat) */
+  background-image:
+    radial-gradient(ellipse 90% 70% at center 30%, var(--rarity-bg) 0%, transparent 70%),
+    linear-gradient(to bottom, var(--rarity-bg) 0%, transparent 45%);
   height: 150px;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 12px;
+  border-bottom: 1px solid var(--rarity-border);
 }
 
 .skin-card-image {
@@ -2395,6 +2872,7 @@ export default function ItemModal({ itemId, onClose }) {
         style={item ? {
           '--rarity-bg': item.rarity_bg,
           '--rarity-border': item.rarity_border,
+          '--rarity-color': item.rarity_color || '#b0c3d9',
         } : {}}
         onClick={(e) => e.stopPropagation()}
       >
@@ -2648,7 +3126,9 @@ function PriceChart({ data, currentPrice }) {
 
 .modal-left {
   padding: 24px;
-  background-image: radial-gradient(circle at center top, var(--rarity-bg, transparent) 0%, transparent 60%);
+  background-image:
+    radial-gradient(ellipse 100% 60% at center top, var(--rarity-bg, transparent) 0%, transparent 60%),
+    linear-gradient(to bottom, var(--rarity-bg, transparent) 0%, transparent 50%);
   border-right: 1px solid var(--border);
 }
 
