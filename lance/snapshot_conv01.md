@@ -5,7 +5,7 @@
 > (voir `lance/README.md`) pour recréer le projet à l'identique dans une
 > nouvelle conversation.
 
-**Généré le :** 12 August 2026 à 21:42 UTC  
+**Généré le :** 12 August 2026 à 21:51 UTC  
 **Dépôt :** `0user1guy-cpu/Trading_Project`  
 **Branche source :** `main` (après PR #2 mergée)
 
@@ -1855,6 +1855,7 @@ export default function Navbar({ currentPage, onNavigate }) {
 ```jsx
 import { useEffect, useState } from 'react'
 import { fetchCategories } from '../api'
+import { useCurrency } from '../contexts/CurrencyContext'
 import RangeSlider from './RangeSlider'
 import WearPopup from './WearPopup'
 import CollectionPopup from './CollectionPopup'
@@ -1873,16 +1874,18 @@ const SORT_OPTIONS = [
   { value: 'float_desc', label: 'Float: High to Low' },
 ]
 
-const PRICE_RANGES = [
-  { label: '< $10', min: 0, max: 10 },
-  { label: '$10 - $50', min: 10, max: 50 },
-  { label: '$50 - $250', min: 50, max: 250 },
-  { label: '> $250', min: 250, max: null },
+// Bornes des presets en USD (devise de base de la DB).
+const PRICE_RANGES_USD = [
+  { min: 0, max: 10 },
+  { min: 10, max: 50 },
+  { min: 50, max: 250 },
+  { min: 250, max: null },
 ]
 
 const MAX_PRICE = 5000
 
 export default function FilterSidebar({ filters, onFilterChange }) {
+  const { convert, formatPrice, currency } = useCurrency()
   const [categories, setCategories] = useState([])
 
   useEffect(() => {
@@ -1895,8 +1898,28 @@ export default function FilterSidebar({ filters, onFilterChange }) {
     onFilterChange({ ...filters, [key]: value, page: 1 })
   }
 
-  // Convertit la valeur du slider prix (0..MAX_PRICE) vers les filtres API.
-  // Si low=0 et high=MAX_PRICE, on ne filtre pas le prix (null).
+  // Convertit une valeur saisie dans la devise active vers l'USD (pour la DB).
+  const toUsd = (v) => {
+    const n = parseFloat(v)
+    if (!isFinite(n) || n <= 0) return null
+    // invert convert : usd = value / rate = value * (1/rate). On utilise le taux USD->devise.
+    return Number((n / convert(1)).toFixed(2))
+  }
+
+  // Affiche une borne USD convertie dans la devise active (sans devise, juste le montant formaté court).
+  const fmtRangeBound = (usd) => {
+    if (usd === null || usd === undefined) return '∞'
+    const v = convert(usd)
+    const digits = currency === 'JPY' ? 0 : 0
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    }).format(v)
+  }
+
+  // Convertit la valeur du slider prix (0..MAX_PRICE, espace USD) vers les filtres API.
   const priceSliderValue = [
     filters.price_min ?? 0,
     filters.price_max ?? MAX_PRICE,
@@ -1933,40 +1956,45 @@ export default function FilterSidebar({ filters, onFilterChange }) {
           max={MAX_PRICE}
           value={priceSliderValue}
           onChange={onPriceSlider}
-          formatValue={(v) => `$${Math.round(v)}`}
+          formatValue={(v) => fmtRangeBound(v)}
         />
         <div className="filter-price-inputs">
           <input
             type="number"
             className="filter-price-input"
             placeholder="0"
-            value={filters.price_min ?? ''}
-            onChange={(e) => update('price_min', e.target.value || null)}
+            value={filters.price_min !== null && filters.price_min !== undefined ? Math.round(convert(filters.price_min)) : ''}
+            onChange={(e) => update('price_min', toUsd(e.target.value))}
           />
           <span className="filter-price-separator">—</span>
           <input
             type="number"
             className="filter-price-input"
             placeholder="∞"
-            value={filters.price_max ?? ''}
-            onChange={(e) => update('price_max', e.target.value || null)}
+            value={filters.price_max !== null && filters.price_max !== undefined && filters.price_max < MAX_PRICE ? Math.round(convert(filters.price_max)) : ''}
+            onChange={(e) => update('price_max', toUsd(e.target.value))}
           />
         </div>
         <div className="filter-price-presets">
-          {PRICE_RANGES.map((range) => (
-            <button
-              key={range.label}
-              className="filter-price-preset"
-              onClick={() => onFilterChange({
-                ...filters,
-                price_min: range.min,
-                price_max: range.max,
-                page: 1,
-              })}
-            >
-              {range.label}
-            </button>
-          ))}
+          {PRICE_RANGES_USD.map((range, i) => {
+            const label = range.max === null
+              ? `> ${fmtRangeBound(range.min)}`
+              : `${fmtRangeBound(range.min)} - ${fmtRangeBound(range.max)}`
+            return (
+              <button
+                key={i}
+                className="filter-price-preset"
+                onClick={() => onFilterChange({
+                  ...filters,
+                  price_min: range.min,
+                  price_max: range.max,
+                  page: 1,
+                })}
+              >
+                {label}
+              </button>
+            )
+          })}
         </div>
       </div>
 

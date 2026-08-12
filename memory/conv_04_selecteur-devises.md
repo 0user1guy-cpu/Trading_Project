@@ -62,18 +62,17 @@ USD, EUR, GBP, JPY, CNY, CAD, AUD, CHF, INR, BRL (10 monnaies). Chaque entrée :
 
 - **PR #5** : « feat(currency): sélecteur de devise dans la navbar + conversion des prix »
   - Branche : `feat/currency-converter`
-  - Commit : `ae6ffaf`
   - 7 fichiers (3 nouveaux : CurrencyContext, CurrencySelector.jsx/.css ; 4 modifiés : App.jsx, Navbar.jsx, SkinCard.jsx, ItemModal.jsx), +354/−23.
   - https://github.com/0user1guy-cpu/Trading_Project/pull/5
-  - **Non mergée** (en attente de review/utilisateur — la conversation s'est arrêtée là, l'utilisateur n'a pas demandé à merger).
+  - **Merge commit** : `c5ccd89` (mergé sur `main`).
+  - Suite à la demande complémentaire de l'utilisateur (filtre de prix de la sidebar doit corrélér avec la devise), la branche a reçu un commit supplémentaire (`6de2315`) modifiant `FilterSidebar.jsx` (slider/inputs/presets convertis) AVANT le merge.
 
 ## Limitations / TODOs restants
 
-1. **PR #5 non mergée** : la feature est sur une branche, pas encore sur `main`. L'utilisateur devra merger (ou demander à l'agent de merger) après review. `frontend/dist/` étant gitignored, un `npm run build` sera nécessaire après merge côté local.
-2. **Devise de base USD hardcoded** : si une future source de données (ex: agrégateur CS2Cap, CSFloat API) renvoie des prix dans une autre devise de base, il faudra ajuster le contexte (définir la devise de base de la source, ou faire une conversion à deux étapes). Pour l'instant USD = hypothèse safe (DB openskin en USD).
-3. **Filtres de prix en USD** : les inputs/presets de la sidebar ne se convertissent pas. C'est intentionnel (le filtrage SQL est en USD), mais l'utilisateur pourrait vouloir que les labels de preset (`< $10`) se convertissent aussi. À confirmer si besoin.
-4. **Taux de change mis à jour au mount** : pas de refresh périodique (les taux open.er-api.com sont daily). Suffisant pour un marché CS2, mais pas en temps réel.
-5. **Pas de bouton "reset to USD"** : l'utilisateur doit re-sélectionner USD dans la dropdown. Mineur.
+1. **Devise de base USD hardcoded** : si une future source de données (ex: agrégateur CS2Cap, CSFloat API) renvoie des prix dans une autre devise de base, il faudra ajuster le contexte (définir la devise de base de la source, ou faire une conversion à deux étapes). Pour l'instant USD = hypothèse safe (DB openskin en USD).
+2. **Arrondis sur les inputs de prix** : la conversion bidirectionnelle (affichage devise → saisie → USD → ré-affichage converti) peut produire de légers arrondis pendant la frappe. Les valeurs sont arrondies à l'entier (Math.round) à l'affichage. Acceptable pour un marché CS2 mais pas précis au centime près en saisie.
+3. **Taux de change mis à jour au mount** : pas de refresh périodique (les taux open.er-api.com sont daily). Suffisant pour un marché CS2, mais pas en temps réel.
+4. **Filtre de prix : presets en USD constants** : les presets sont définis en USD (0/10/50/250) et affichés convertis. Les bornes ne "fluctuent" pas dynamiquement (l'utilisateur a explicitement dit que le filtre de prix n'est pas un objet en vente, donc pas de fluctuation — juste une corrélation d'affichage avec la devise active).
 
 ## Ce que l'utilisateur attendait et s'il était satisfait
 
