@@ -32,6 +32,7 @@ cd frontend && npm install && npm run build
 - `utils/` — fetcher.py (API openskin), rarity_helper.py, database.py, config.py
 - `data.sauv.trading/` — base SQLite (market_items.db, 37 368 items)
 - `memory/` — **résumés des conversations** (voir protocole ci-dessous)
+- `lance/` — **snapshot + protocole « lance »** pour recréer le projet à l'identique (voir ci-dessous)
 
 ---
 
@@ -68,3 +69,49 @@ Avant de terminer, crée un résumé de la conversation :
 - Numérote les conversations de façon séquentielle (01, 02, 03…).
 - Sois honnête dans les résumés : note les limitations et ce qui ne marche pas encore.
 - Ces fichiers sont lus par les futures conversations — écris-les pour être utile à ton "soi futur".
+
+---
+
+## 🚀 Protocole « lance » — recréer le projet à l'identique
+
+L'utilisateur peut, dans **n'importe quelle nouvelle conversation**, dire :
+
+> **« lance …… »** *(ex: « lance le projet », « lance conv01 », « lance l'interface csfloat »)*
+
+### Que faire quand tu entends « lance »
+
+1. **Tire le vrai projet GitHub à jour** : `git pull` sur la branche courante
+   (pour récupérer les dernières modifs poussées — sinon tu recréerais une
+   version obsolète). Le relanceur le fait automatiquement.
+2. **Régénère le snapshot** depuis les fichiers actuels :
+   `python lance/generer_snapshot.py` (le relanceur le fait aussi auto).
+3. **Recrée l'arborescence** comme décrit dans `lance/snapshot_conv01.md`.
+   - Soit à la main (un fichier = un bloc de code du snapshot),
+   - Soit en lançant le relanceur : `python lance/relancer.py`
+     (ajoute `--install` pour les deps, `--build` pour le frontend,
+     `--start` pour démarrer, ou `--full` pour tout faire, sync comprise).
+   - En mode offline (sans git) : `--from-snapshot` pour sauter le `git pull`.
+4. **Base SQLite** : soit copier `data.sauv.trading/market_items.db`,
+   soit `python utils/database.py` puis `python utils/fetcher.py` (clé `.env` requise).
+5. **Démarre** : `python lancer.py` → http://localhost:8000
+
+### Garder le snapshot synchronisé avec le vrai projet GitHub
+
+Le snapshot `lance/snapshot_conv01.md` est une **photocopie** qui doit refléter
+le **vrai projet à jour**. Pour ça, **à la fin de chaque conversation** où le
+projet a été modifié, l'utilisateur (ou l'agent) lance :
+
+```bash
+# À ÉCRIRE À LA FIN DE CHAQUE CONVERSATION QUI MODIFIE LE PROJET :
+python lance/generer_snapshot.py && git add lance/snapshot_conv01.md && git commit -m "chore: refresh lance snapshot" && git push
+```
+
+Cela régénère la photocopie depuis les fichiers actuels et la pousse sur GitHub,
+pour que la prochaine conversation qui dit « lance le projet » récupère bien la
+version la plus récente (via le `git pull` automatique du relanceur).
+
+### Fichiers du dossier `lance/`
+- `lance/README.md` — protocole + paramètres clés.
+- `lance/snapshot_conv01.md` — blueprint complet (généré, ne pas éditer à la main).
+- `lance/generer_snapshot.py` — régénère le snapshot depuis les fichiers sources.
+- `lance/relancer.py` — recrée le projet depuis le snapshot (+ install/build/start).

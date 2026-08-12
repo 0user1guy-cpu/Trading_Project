@@ -18,11 +18,20 @@ DB_PATH = os.path.abspath(
 
 
 def clean_category(item_name: str, raw_category: str = "") -> str:
+    """Retourne la catégorie canonique.
+
+    La catégorie est désormais stockée proprement en DB par fetcher.py (basée
+    sur le `type` de l'API openskin /v1/items). On fait confiance à la valeur
+    stockée ; le fallback heuristique ci-dessous ne sert que si la colonne est
+    vide/None (vieille DB).
+    """
+    if raw_category and raw_category.strip() and raw_category != "Autres":
+        return raw_category
+
     name = str(item_name).lower()
 
     if "sticker" in name or "patch" in name or "graffiti" in name:
         return "Stickers"
-
     if "case" in name or "capsule" in name or "package" in name:
         return "Caisses & Capsules"
 
@@ -41,50 +50,72 @@ def clean_category(item_name: str, raw_category: str = "") -> str:
     return "Armes"
 
 
-def extract_wear_and_float(name: str, raw_float: Optional[float] = None):
+# Valeur float médiane par wear (cohérent avec utils/fetcher.py).
+WEAR_TO_FLOAT = {
+    "Factory New": 0.03,
+    "Minimal Wear": 0.10,
+    "Field-Tested": 0.25,
+    "Well-Worn": 0.40,
+    "Battle-Scarred": 0.70,
+}
+
+
+def extract_wear_and_float(name: str, raw_float: Optional[float] = None,
+                           stored_wear: Optional[str] = None):
+    """Retourne (wear, float).
+
+    Priorité :
+      1. `stored_wear` (colonne `wear` de la DB, désormais remplie proprement
+         par fetcher.py depuis l'exterior de l'API openskin).
+      2. Wear déduit du nom (fallback).
+      3. Wear déduit du float (dernier recours).
+
+    Le float retourné est :
+      - le `raw_float` de la DB s'il est valide (et pas le 0.05 constant
+        historique), sinon
+      - la valeur médiane du wear détecté.
+    """
+    # --- Wear : priorité à la valeur stockée ---
     name_lower = name.lower()
-
-    # 1. Priorité au wear explicite dans le nom (la source OpenSkin fournit un float
-    #    parfois constant/inexact, donc le nom reste la source de vérité pour le wear)
-    name_wear = None
-    if "factory new" in name_lower:
-        name_wear = "Factory New"
+    if stored_wear and stored_wear.strip() and stored_wear != "Standard":
+        wear = stored_wear.strip()
+    elif "factory new" in name_lower:
+        wear = "Factory New"
     elif "minimal wear" in name_lower:
-        name_wear = "Minimal Wear"
+        wear = "Minimal Wear"
     elif "field-tested" in name_lower:
-        name_wear = "Field-Tested"
+        wear = "Field-Tested"
     elif "well-worn" in name_lower:
-        name_wear = "Well-Worn"
+        wear = "Well-Worn"
     elif "battle-scarred" in name_lower:
-        name_wear = "Battle-Scarred"
+        wear = "Battle-Scarred"
+    else:
+        wear = None
 
-    # 2. Détermine le float réel (utilise raw_float s'il est valide, sinon une
-    #    valeur médiane correspondant au wear détecté dans le nom)
-    f_val = 0.05
+    # --- Float : valide la valeur stockée, sinon médiane du wear ---
+    f_val = None
     try:
         if raw_float is not None and str(raw_float).strip() not in ["", "None", "N/A", "nan"]:
             parsed = float(str(raw_float).replace(",", "."))
-            if 0.0 < parsed <= 1.0:
+            if 0.0 <= parsed <= 1.0:
                 f_val = parsed
     except (ValueError, TypeError):
         pass
 
-    if name_wear:
-        # Si le float semble inexact (constant à 0.05), on prend une valeur médiane
-        # du range de wear pour l'affichage de la barre de float
-        median_floats = {
-            "Factory New": 0.03,
-            "Minimal Wear": 0.10,
-            "Field-Tested": 0.25,
-            "Well-Worn": 0.40,
-            "Battle-Scarred": 0.70,
-        }
-        if f_val == 0.05 and name_wear != "Factory New":
-            f_val = median_floats[name_wear]
-        return name_wear, f_val
+    if wear:
+        # Si le float semble être le placeholder 0.05 mais que le wear n'est pas
+        # Factory New, on prend la médiane du wear pour un affichage réaliste.
+        if f_val is None or (f_val == 0.05 and wear != "Factory New"):
+            f_val = WEAR_TO_FLOAT.get(wear, 0.05)
+        return wear, round(f_val, 4)
 
-    # 3. Fallback : déduire le wear du float
-    if 0.0 <= f_val <= 1.0:
+    # Si l'API a explicitement marqué "Standard" (stickers, cases, agents...),
+    # on ne déduit pas un wear depuis le float — on garde Standard.
+    if stored_wear and stored_wear.strip() == "Standard":
+        return "Standard", 0.05
+
+    # Fallback : déduire le wear du float (vieille DB sans stored_wear)
+    if f_val is not None and 0.0 <= f_val <= 1.0:
         if f_val < 0.07:
             wear = "Factory New"
         elif f_val < 0.15:
@@ -95,7 +126,7 @@ def extract_wear_and_float(name: str, raw_float: Optional[float] = None):
             wear = "Well-Worn"
         else:
             wear = "Battle-Scarred"
-        return wear, f_val
+        return wear, round(f_val, 4)
 
     return "Standard", 0.05
 

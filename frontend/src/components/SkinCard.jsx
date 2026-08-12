@@ -8,6 +8,7 @@ export default function SkinCard({ item, onClick }) {
       style={{
         '--rarity-bg': item.rarity_bg,
         '--rarity-border': item.rarity_border,
+        '--rarity-color': item.rarity_color || '#b0c3d9',
       }}
       onClick={() => onClick(item)}
     >
