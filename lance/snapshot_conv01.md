@@ -5,7 +5,7 @@
 > (voir `lance/README.md`) pour recréer le projet à l'identique dans une
 > nouvelle conversation.
 
-**Généré le :** 12 August 2026 à 21:51 UTC  
+**Généré le :** 12 August 2026 à 23:58 UTC  
 **Dépôt :** `0user1guy-cpu/Trading_Project`  
 **Branche source :** `main` (après PR #2 mergée)
 
@@ -1421,6 +1421,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 ```jsx
 import { useState } from 'react'
 import { CurrencyProvider } from './contexts/CurrencyContext'
+import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
 import Navbar from './components/Navbar'
 import CategoryBar from './components/CategoryBar'
 import FilterSidebar from './components/FilterSidebar'
@@ -1455,29 +1456,31 @@ export default function App() {
   }
 
   return (
-    <CurrencyProvider>
-      <div className="app">
-        <Navbar currentPage={currentPage} onNavigate={handleNavigate} />
-        <div className="app-body">
-          {currentPage === 'market' ? (
-            <>
-              <FilterSidebar filters={filters} onFilterChange={setFilters} />
-              <div className="market-main">
-                <div className="market-toolbar">
-                  <CategoryBar filters={filters} onFilterChange={setFilters} />
+    <LanguageProvider>
+      <CurrencyProvider>
+        <div className="app">
+          <Navbar currentPage={currentPage} onNavigate={handleNavigate} />
+          <div className="app-body">
+            {currentPage === 'market' ? (
+              <>
+                <FilterSidebar filters={filters} onFilterChange={setFilters} />
+                <div className="market-main">
+                  <div className="market-toolbar">
+                    <CategoryBar filters={filters} onFilterChange={setFilters} />
+                  </div>
+                  <MarketGrid filters={filters} setFilters={setFilters} />
                 </div>
-                <MarketGrid filters={filters} setFilters={setFilters} />
+              </>
+            ) : (
+              <div className="app-placeholder">
+                <h1>{currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}</h1>
+                <p>This page is part of the Streamlit app. Switch to Market to see the new interface.</p>
               </div>
-            </>
-          ) : (
-            <div className="app-placeholder">
-              <h1>{currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}</h1>
-              <p>This page is part of the Streamlit app. Switch to Market to see the new interface.</p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
-    </CurrencyProvider>
+      </CurrencyProvider>
+    </LanguageProvider>
   )
 }
 ```
@@ -1687,16 +1690,19 @@ export const FLOAT_COLORS = [
 
 ```jsx
 import CurrencySelector from './CurrencySelector'
+import LanguageSelector from './LanguageSelector'
+import { useLanguage } from '../contexts/LanguageContext'
 import './Navbar.css'
 
 const NAV_LINKS = [
-  { label: 'Home', page: 'home' },
-  { label: 'Analytics', page: 'analytics' },
-  { label: 'Market', page: 'market' },
-  { label: 'Data Market', page: 'data-market' },
+  { key: 'home', page: 'home', tKey: 'nav.home' },
+  { key: 'analytics', page: 'analytics', tKey: 'nav.analytics' },
+  { key: 'market', page: 'market', tKey: 'nav.market' },
+  { key: 'data-market', page: 'data-market', tKey: 'nav.dataMarket' },
 ]
 
 export default function Navbar({ currentPage, onNavigate }) {
+  const { t } = useLanguage()
   return (
     <nav className="navbar">
       <div className="navbar-left">
@@ -1710,30 +1716,19 @@ export default function Navbar({ currentPage, onNavigate }) {
         <div className="navbar-links">
           {NAV_LINKS.map((link) => (
             <button
-              key={link.label}
+              key={link.key}
               className={`navbar-link ${currentPage === link.page ? 'active' : ''}`}
               onClick={() => onNavigate(link.page)}
             >
-              {link.label}
+              {t(link.tKey)}
             </button>
           ))}
         </div>
       </div>
       <div className="navbar-right">
         <CurrencySelector />
-        <div className="navbar-selector">
-          <span className="navbar-selector-value">FR</span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M7 10l5 5 5-5z" />
-          </svg>
-        </div>
-        <div className="navbar-selector">
-          <span className="navbar-selector-value">FR</span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M7 10l5 5 5-5z" />
-          </svg>
-        </div>
-        <button className="navbar-login-btn">Sign In</button>
+        <LanguageSelector />
+        <button className="navbar-login-btn">{t('nav.signIn')}</button>
       </div>
     </nav>
   )
@@ -1853,9 +1848,8 @@ export default function Navbar({ currentPage, onNavigate }) {
 ### `frontend/src/components/FilterSidebar.jsx`
 
 ```jsx
-import { useEffect, useState } from 'react'
-import { fetchCategories } from '../api'
 import { useCurrency } from '../contexts/CurrencyContext'
+import { useLanguage } from '../contexts/LanguageContext'
 import RangeSlider from './RangeSlider'
 import WearPopup from './WearPopup'
 import CollectionPopup from './CollectionPopup'
@@ -1865,13 +1859,13 @@ import SpecialFilter from './SpecialFilter'
 import ListingFilter from './ListingFilter'
 import './FilterSidebar.css'
 
-const SORT_OPTIONS = [
-  { value: 'price_asc', label: 'Price: Low to High' },
-  { value: 'price_desc', label: 'Price: High to Low' },
-  { value: 'name_asc', label: 'Name: A to Z' },
-  { value: 'name_desc', label: 'Name: Z to A' },
-  { value: 'float_asc', label: 'Float: Low to High' },
-  { value: 'float_desc', label: 'Float: High to Low' },
+const SORT_KEYS = [
+  { value: 'price_asc', tKey: 'sort.priceAsc' },
+  { value: 'price_desc', tKey: 'sort.priceDesc' },
+  { value: 'name_asc', tKey: 'sort.nameAsc' },
+  { value: 'name_desc', tKey: 'sort.nameDesc' },
+  { value: 'float_asc', tKey: 'sort.floatAsc' },
+  { value: 'float_desc', tKey: 'sort.floatDesc' },
 ]
 
 // Bornes des presets en USD (devise de base de la DB).
@@ -1886,13 +1880,7 @@ const MAX_PRICE = 5000
 
 export default function FilterSidebar({ filters, onFilterChange }) {
   const { convert, formatPrice, currency } = useCurrency()
-  const [categories, setCategories] = useState([])
-
-  useEffect(() => {
-    fetchCategories()
-      .then((cats) => setCategories([{ category: 'Tous', count: null }, ...cats]))
-      .catch((e) => console.error('Failed to load categories:', e))
-  }, [])
+  const { t } = useLanguage()
 
   const update = (key, value) => {
     onFilterChange({ ...filters, [key]: value, page: 1 })
@@ -1937,11 +1925,11 @@ export default function FilterSidebar({ filters, onFilterChange }) {
     <aside className="filter-sidebar">
       {/* Recherche */}
       <div className="filter-section">
-        <div className="filter-section-title">Search</div>
+        <div className="filter-section-title">{t('filter.search')}</div>
         <input
           type="text"
           className="filter-search-input"
-          placeholder="Search for items..."
+          placeholder={t('filter.searchPlaceholder')}
           value={filters.q || ''}
           onChange={(e) => update('q', e.target.value)}
         />
@@ -1949,7 +1937,7 @@ export default function FilterSidebar({ filters, onFilterChange }) {
 
       {/* Prix — slider style CSFloat avec flèches + inputs */}
       <div className="filter-section">
-        <div className="filter-section-title">Price</div>
+        <div className="filter-section-title">{t('filter.price')}</div>
         <RangeSlider
           variant="price"
           min={0}
@@ -2000,7 +1988,7 @@ export default function FilterSidebar({ filters, onFilterChange }) {
 
       {/* Float — section séparée avec dégradé couleur + flèches */}
       <div className="filter-section">
-        <div className="filter-section-title">Float</div>
+        <div className="filter-section-title">{t('filter.float')}</div>
         <RangeSlider
           variant="float"
           min={0}
@@ -2032,7 +2020,7 @@ export default function FilterSidebar({ filters, onFilterChange }) {
 
       {/* Wear — popup initiales aligné sous Float, avec tooltip */}
       <div className="filter-section">
-        <div className="filter-section-title">Wear</div>
+        <div className="filter-section-title">{t('filter.wear')}</div>
         <WearPopup
           value={filters.wear}
           onChange={(w) => update('wear', w)}
@@ -2081,14 +2069,14 @@ export default function FilterSidebar({ filters, onFilterChange }) {
 
       {/* Tri */}
       <div className="filter-section">
-        <div className="filter-section-title">Sort By</div>
+        <div className="filter-section-title">{t('filter.sortBy')}</div>
         <select
           className="filter-sort-select"
           value={filters.sort || 'price_asc'}
           onChange={(e) => update('sort', e.target.value)}
         >
-          {SORT_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          {SORT_KEYS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{t(opt.tKey)}</option>
           ))}
         </select>
       </div>
@@ -2349,11 +2337,13 @@ export default function FilterSidebar({ filters, onFilterChange }) {
 ```jsx
 import { useEffect, useState, useCallback } from 'react'
 import { fetchItems } from '../api'
+import { useLanguage } from '../contexts/LanguageContext'
 import SkinCard from './SkinCard'
 import ItemModal from './ItemModal'
 import './MarketGrid.css'
 
 export default function MarketGrid({ filters, setFilters }) {
+  const { t } = useLanguage()
   const [data, setData] = useState({ items: [], total: 0, total_pages: 0, page: 1 })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -2417,11 +2407,11 @@ export default function MarketGrid({ filters, setFilters }) {
     <div className="market-grid-container">
       <div className="market-grid-header">
         <div className="market-results-count">
-          {loading ? 'Loading...' : `${data.total.toLocaleString()} items`}
+          {loading ? t('grid.loading') : `${data.total.toLocaleString()} ${t('grid.items')}`}
         </div>
       </div>
 
-      {error && <div className="market-error">Failed to load: {error}</div>}
+      {error && <div className="market-error">{t('grid.error')} {error}</div>}
 
       {loading && data.items.length === 0 ? (
         <div className="market-grid">
@@ -2440,7 +2430,7 @@ export default function MarketGrid({ filters, setFilters }) {
       {!loading && data.items.length === 0 && !error && (
         <div className="market-empty">
           <span className="market-empty-icon">🔍</span>
-          <p>No items match your filters.</p>
+          <p>{t('grid.noResults')}</p>
         </div>
       )}
 
@@ -2452,17 +2442,17 @@ export default function MarketGrid({ filters, setFilters }) {
             disabled={data.page <= 1}
             onClick={() => handlePageChange(data.page - 1)}
           >
-            ← Prev
+            {t('grid.prev')}
           </button>
           <span className="market-page-info">
-            Page {data.page} / {data.total_pages}
+            {t('grid.page')} {data.page} / {data.total_pages}
           </span>
           <button
             className="market-page-btn"
             disabled={data.page >= data.total_pages}
             onClick={() => handlePageChange(data.page + 1)}
           >
-            Next →
+            {t('grid.next')}
           </button>
         </div>
       )}
@@ -2585,10 +2575,27 @@ export default function MarketGrid({ filters, setFilters }) {
 ```jsx
 import { formatFloat } from '../api'
 import { useCurrency } from '../contexts/CurrencyContext'
+import { useLanguage } from '../contexts/LanguageContext'
+import { getSpecialMeta } from './SpecialFilter'
 import './SkinCard.css'
 
+/**
+ * Carte d'un skin (style CSFloat).
+ *
+ * Layout (style CSFloat) :
+ *  - Zone image (agrandie +20%) avec en haut-gauche le NOM de l'arme,
+ *    juste en dessous le SPÉCIAL (StatTrak™/Souvenir) avec sa couleur + glow,
+ *    et à droite du spécial l'ÉTAT de wear (Factory New...).
+ *  - Zone infos (réduite -20%) : float bar, prix, rareté, bouton Buy Now.
+ *
+ * Conventions marketplaces CS2 : les noms d'items/wear/rareté restent en
+ * anglais. Seul le bouton « Buy Now » est traduit.
+ */
 export default function SkinCard({ item, onClick }) {
   const { formatPrice } = useCurrency()
+  const { t } = useLanguage()
+  const special = getSpecialMeta(item)
+
   return (
     <div
       className="skin-card"
@@ -2600,6 +2607,30 @@ export default function SkinCard({ item, onClick }) {
       onClick={() => onClick(item)}
     >
       <div className="skin-card-image-wrap">
+        {/* Nom + spécial + état déplacés en haut-gauche de la zone image */}
+        <div className="skin-card-overlay-top">
+          <div className="skin-card-overlay-name" title={item.name}>
+            {item.name}
+          </div>
+          <div className="skin-card-overlay-sub">
+            {special && (
+              <span
+                className="skin-card-special"
+                style={{
+                  color: special.color,
+                  textShadow: `0 0 8px ${special.color}, 0 0 14px ${special.color}80`,
+                }}
+              >
+                {t(special.tKey)}
+                {special.tm ? <sup className="skin-card-special-tm">™</sup> : null}
+              </span>
+            )}
+            {item.wear && (
+              <span className="skin-card-overlay-wear">{item.wear}</span>
+            )}
+          </div>
+        </div>
+
         <div className="skin-card-stickers">
           <div className="skin-card-sticker-slot" />
           <div className="skin-card-sticker-slot" />
@@ -2619,28 +2650,20 @@ export default function SkinCard({ item, onClick }) {
       </div>
 
       <div className="skin-card-info">
-        <div className="skin-card-name" title={item.name}>
-          {item.name}
-        </div>
-        <div className="skin-card-wear-row">
-          <span className={`skin-card-wear-badge ${item.wear.toLowerCase().replace(/\s/g, '-')}`}>
-            {item.wear}
-          </span>
-          <span className="skin-card-float">{formatFloat(item.float)}</span>
-        </div>
         <div className="skin-card-float-bar">
           <div className="skin-card-float-bar-track">
             <div className="skin-card-float-bar-fill" style={{ width: `${item.float * 100}%` }} />
             <div className="skin-card-float-bar-marker" style={{ left: `${item.float * 100}%` }} />
           </div>
         </div>
+        <div className="skin-card-float-label">{formatFloat(item.float)}</div>
         <div className="skin-card-footer">
           <span className="skin-card-price">{formatPrice(item.price)}</span>
           <span className={`skin-card-rarity-badge ${item.rarity_badge}`}>
             {item.rarity}
           </span>
         </div>
-        <button className="skin-card-buy-btn">Buy Now</button>
+        <button className="skin-card-buy-btn">{t('modal.buyNow')}</button>
       </div>
     </div>
   )
@@ -2689,12 +2712,58 @@ export default function SkinCard({ item, onClick }) {
   background-image:
     radial-gradient(ellipse 90% 70% at center 30%, var(--rarity-bg) 0%, transparent 70%),
     linear-gradient(to bottom, var(--rarity-bg) 0%, transparent 45%);
-  height: 150px;
+  /* Zone image agrandie ~20% (150px -> 180px) */
+  height: 180px;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 12px;
   border-bottom: 1px solid var(--rarity-border);
+}
+
+/* Overlay nom + spécial + état en haut-gauche de la zone image */
+.skin-card-overlay-top {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  right: 10px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.skin-card-overlay-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85), 0 0 2px rgba(0, 0, 0, 0.9);
+}
+
+.skin-card-overlay-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.skin-card-special {
+  font-weight: 700;
+}
+
+.skin-card-special-tm {
+  font-size: 7px;
+  vertical-align: super;
+  margin-left: 1px;
+}
+
+.skin-card-overlay-wear {
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 .skin-card-image {
@@ -2738,17 +2807,16 @@ export default function SkinCard({ item, onClick }) {
 }
 
 .skin-card-info {
-  padding: 10px 12px 12px;
+  /* Zone infos réduite ~20% (padding 10/12/12 -> 8/10/10) */
+  padding: 8px 10px 10px;
 }
 
-.skin-card-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 8px;
+.skin-card-float-label {
+  font-size: 10px;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  color: var(--text-secondary);
+  margin-top: 3px;
+  margin-bottom: 6px;
 }
 
 .skin-card-wear-row {
@@ -2807,15 +2875,11 @@ export default function SkinCard({ item, onClick }) {
   height: 5px;
   background: linear-gradient(to right,
     #4b69ff 0%,
-    #4b69ff 10%,
-    #8847ff 15%,
-    #8847ff 38%,
-    #d32ce6 38%,
-    #d32ce6 45%,
-    #ffd700 45%,
-    #ffd700 55%,
-    #ff4500 55%,
-    #ff4500 100%
+    #8847ff 25%,
+    #d32ce6 40%,
+    #ffd700 50%,
+    #ff4500 70%,
+    #eb4b4b 100%
   );
   border-radius: 3px;
 }
@@ -2874,10 +2938,13 @@ export default function SkinCard({ item, onClick }) {
 import { useEffect, useState } from 'react'
 import { fetchItemDetail, formatFloat } from '../api'
 import { useCurrency } from '../contexts/CurrencyContext'
+import { useLanguage } from '../contexts/LanguageContext'
+import { getSpecialMeta } from './SpecialFilter'
 import './ItemModal.css'
 
 export default function ItemModal({ itemId, onClose }) {
   const { formatPrice } = useCurrency()
+  const { t } = useLanguage()
   const [item, setItem] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -2913,8 +2980,8 @@ export default function ItemModal({ itemId, onClose }) {
         } : {}}
         onClick={(e) => e.stopPropagation()}
       >
-        {loading && <div className="modal-loading">Loading...</div>}
-        {error && <div className="modal-error">Error: {error}</div>}
+        {loading && <div className="modal-loading">{t('grid.loading')}</div>}
+        {error && <div className="modal-error">{error}</div>}
         {item && (
           <>
             <button className="modal-close" onClick={onClose}>✕</button>
@@ -2931,19 +2998,19 @@ export default function ItemModal({ itemId, onClose }) {
                 </div>
                 <div className="modal-quick-stats">
                   <div className="modal-stat">
-                    <span className="modal-stat-label">Float</span>
+                    <span className="modal-stat-label">{t('modal.float')}</span>
                     <span className="modal-stat-value">{formatFloat(item.float)}</span>
                   </div>
                   <div className="modal-stat">
-                    <span className="modal-stat-label">Wear</span>
+                    <span className="modal-stat-label">{t('modal.wear')}</span>
                     <span className="modal-stat-value">{item.wear}</span>
                   </div>
                   <div className="modal-stat">
-                    <span className="modal-stat-label">Rarity</span>
+                    <span className="modal-stat-label">{t('modal.rarity')}</span>
                     <span className="modal-stat-value">{item.rarity}</span>
                   </div>
                   <div className="modal-stat">
-                    <span className="modal-stat-label">Platform</span>
+                    <span className="modal-stat-label">{t('modal.platform')}</span>
                     <span className="modal-stat-value">{item.platform}</span>
                   </div>
                 </div>
@@ -2961,8 +3028,33 @@ export default function ItemModal({ itemId, onClose }) {
               {/* Colonne droite : infos + graphique */}
               <div className="modal-right">
                 <div className="modal-header">
-                  <h2 className="modal-title">{item.name}</h2>
+                  <h2
+                    className="modal-title"
+                    style={
+                      getSpecialMeta(item)
+                        ? {
+                            color: getSpecialMeta(item).color,
+                            textShadow: `0 0 10px ${getSpecialMeta(item).color}, 0 0 18px ${getSpecialMeta(item).color}80`,
+                          }
+                        : undefined
+                    }
+                  >
+                    {item.name}
+                  </h2>
                   <div className="modal-badges">
+                    {getSpecialMeta(item) && (
+                      <span
+                        className="modal-special-badge"
+                        style={{
+                          color: getSpecialMeta(item).color,
+                          boxShadow: `0 0 8px ${getSpecialMeta(item).color}80`,
+                          borderColor: getSpecialMeta(item).color,
+                        }}
+                      >
+                        {t(getSpecialMeta(item).tKey)}
+                        {getSpecialMeta(item).tm ? <sup className="modal-special-tm">™</sup> : null}
+                      </span>
+                    )}
                     <span className={`modal-wear-badge ${item.wear.toLowerCase().replace(/\s/g, '-')}`}>
                       {item.wear}
                     </span>
@@ -2973,35 +3065,35 @@ export default function ItemModal({ itemId, onClose }) {
                 </div>
 
                 <div className="modal-price-section">
-                  <span className="modal-price-label">Price</span>
+                  <span className="modal-price-label">{t('modal.price')}</span>
                   <span className="modal-price">{formatPrice(item.price)}</span>
                 </div>
 
                 {/* Graphique d'historique de prix */}
                 <div className="modal-chart-section">
-                  <div className="modal-chart-title">Price History (30 days)</div>
-                  <PriceChart data={item.price_history} currentPrice={item.price} formatPrice={formatPrice} />
+                  <div className="modal-chart-title">{t('modal.priceHistory')}</div>
+                  <PriceChart data={item.price_history} currentPrice={item.price} formatPrice={formatPrice} t={t} />
                 </div>
 
                 {/* Boutons d'action */}
                 <div className="modal-actions">
-                  <button className="modal-buy-btn">Buy Now · {formatPrice(item.price)}</button>
-                  <button className="modal-secondary-btn">Add to Cart</button>
+                  <button className="modal-buy-btn">{t('modal.buyNow')} · {formatPrice(item.price)}</button>
+                  <button className="modal-secondary-btn">{t('modal.addToCart')}</button>
                 </div>
 
                 {/* Métadonnées */}
                 <div className="modal-metadata">
                   <div className="modal-meta-row">
-                    <span className="modal-meta-label">Category</span>
+                    <span className="modal-meta-label">{t('modal.category')}</span>
                     <span className="modal-meta-value">{item.category}</span>
                   </div>
                   <div className="modal-meta-row">
-                    <span className="modal-meta-label">Volume</span>
+                    <span className="modal-meta-label">{t('modal.volume')}</span>
                     <span className="modal-meta-value">{item.volume}</span>
                   </div>
                   <div className="modal-meta-row">
-                    <span className="modal-meta-label">Last Updated</span>
-                    <span className="modal-meta-value">{item.updated_at || 'N/A'}</span>
+                    <span className="modal-meta-label">{t('modal.lastUpdated')}</span>
+                    <span className="modal-meta-value">{item.updated_at || t('common.na')}</span>
                   </div>
                 </div>
               </div>
@@ -3013,8 +3105,8 @@ export default function ItemModal({ itemId, onClose }) {
   )
 }
 
-function PriceChart({ data, currentPrice, formatPrice }) {
-  if (!data || data.length === 0) return <div className="modal-chart-empty">No data</div>
+function PriceChart({ data, currentPrice, formatPrice, t }) {
+  if (!data || data.length === 0) return <div className="modal-chart-empty">{t ? t('modal.noData') : 'No data'}</div>
 
   const prices = data.map((d) => d.price)
   const minP = Math.min(...prices)
@@ -3108,7 +3200,8 @@ function PriceChart({ data, currentPrice, formatPrice }) {
   border: 1px solid var(--rarity-border, var(--border));
   border-radius: var(--radius);
   width: 100%;
-  max-width: 880px;
+  /* Modal agrandi ~30% (880px -> 1144px) */
+  max-width: 1144px;
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
@@ -3157,7 +3250,8 @@ function PriceChart({ data, currentPrice, formatPrice }) {
 
 .modal-grid {
   display: grid;
-  grid-template-columns: 340px 1fr;
+  /* Colonne image agrandie +20% (340px -> 408px), colonne infos réduite -20% */
+  grid-template-columns: 408px 1fr;
   gap: 0;
 }
 
@@ -3172,7 +3266,8 @@ function PriceChart({ data, currentPrice, formatPrice }) {
 .modal-image-wrap {
   background-color: var(--bg-tertiary);
   border-radius: var(--radius);
-  height: 220px;
+  /* Image agrandie +20% (220px -> 264px) */
+  height: 264px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3225,11 +3320,12 @@ function PriceChart({ data, currentPrice, formatPrice }) {
   position: relative;
   height: 8px;
   background: linear-gradient(to right,
-    #4b69ff 0%, #4b69ff 10%,
-    #8847ff 15%, #8847ff 38%,
-    #d32ce6 38%, #d32ce6 45%,
-    #ffd700 45%, #ffd700 55%,
-    #ff4500 55%, #ff4500 100%
+    #4b69ff 0%,
+    #8847ff 25%,
+    #d32ce6 40%,
+    #ffd700 50%,
+    #ff4500 70%,
+    #eb4b4b 100%
   );
   border-radius: 4px;
 }
@@ -3274,6 +3370,22 @@ function PriceChart({ data, currentPrice, formatPrice }) {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.modal-special-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid;
+  background-color: rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+.modal-special-tm {
+  font-size: 7px;
+  vertical-align: super;
+  margin-left: 1px;
 }
 
 .modal-wear-badge {

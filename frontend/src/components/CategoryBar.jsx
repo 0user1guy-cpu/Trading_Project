@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { fetchCategories } from '../api'
+import { useLanguage } from '../contexts/LanguageContext'
 import './CategoryBar.css'
 
 /**
@@ -8,6 +9,8 @@ import './CategoryBar.css'
  * compteur. La catégorie active est mise en évidence.
  */
 export default function CategoryBar({ filters, onFilterChange }) {
+  const { t } = useLanguage()
+  const ALL = '__all__'
   const [categories, setCategories] = useState([])
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -15,7 +18,7 @@ export default function CategoryBar({ filters, onFilterChange }) {
 
   useEffect(() => {
     fetchCategories()
-      .then((cats) => setCategories([{ category: 'Tous', count: null }, ...cats]))
+      .then((cats) => setCategories([{ category: ALL, count: null }, ...cats]))
       .catch((e) => console.error('Failed to load categories:', e))
   }, [])
 
@@ -28,17 +31,19 @@ export default function CategoryBar({ filters, onFilterChange }) {
     return () => document.removeEventListener('mousedown', onClick)
   }, [])
 
-  const active = filters.category || 'Tous'
+  const active = filters.category || ALL
   const activeCat = categories.find((c) => c.category === active)
   const filtered = categories.filter((c) =>
-    c.category.toLowerCase().includes(query.toLowerCase())
+    (c.category === ALL ? t('category.all') : c.category).toLowerCase().includes(query.toLowerCase())
   )
 
   const select = (cat) => {
-    onFilterChange({ ...filters, category: cat === 'Tous' ? null : cat, page: 1 })
+    onFilterChange({ ...filters, category: cat === ALL ? null : cat, page: 1 })
     setOpen(false)
     setQuery('')
   }
+
+  const display = (cat) => (cat === ALL ? t('category.all') : cat)
 
   return (
     <div className="category-bar" ref={wrapRef}>
@@ -46,8 +51,8 @@ export default function CategoryBar({ filters, onFilterChange }) {
         className={`category-trigger ${open ? 'open' : ''}`}
         onClick={() => setOpen((o) => !o)}
       >
-        <span className="category-trigger-label">Category</span>
-        <span className="category-trigger-value">{active}</span>
+        <span className="category-trigger-label">{t('modal.category')}</span>
+        <span className="category-trigger-value">{display(active)}</span>
         {activeCat && activeCat.count != null && (
           <span className="category-trigger-count">{activeCat.count.toLocaleString()}</span>
         )}
@@ -61,7 +66,7 @@ export default function CategoryBar({ filters, onFilterChange }) {
           <div className="category-popup-search">
             <input
               type="text"
-              placeholder="Filter categories..."
+              placeholder={t('filter.searchPlaceholder')}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               autoFocus
@@ -75,7 +80,7 @@ export default function CategoryBar({ filters, onFilterChange }) {
                 onClick={() => select(cat.category)}
               >
                 <span className="category-popup-dot" />
-                <span className="category-popup-name">{cat.category}</span>
+                <span className="category-popup-name">{display(cat.category)}</span>
                 {cat.count != null && (
                   <span className="category-popup-count">{cat.count.toLocaleString()}</span>
                 )}

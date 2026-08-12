@@ -80,17 +80,6 @@ export default function RangeSlider({
         ref={trackRef}
         onMouseDown={onTrackClick}
       >
-        {variant === 'float' && FLOAT_COLORS.map((c, i) => (
-          <div
-            key={i}
-            className="range-slider-segment"
-            style={{
-              background: c,
-              left: `${(i / FLOAT_COLORS.length) * 100}%`,
-              width: `${100 / FLOAT_COLORS.length}%`,
-            }}
-          />
-        ))}
         {/* Voiles assombris hors sélection */}
         <div className="range-slider-dim left" style={{ width: pct(low) }} />
         <div className="range-slider-dim right" style={{ width: `${100 - parseFloat(pct(high))}%` }} />

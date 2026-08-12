@@ -15,6 +15,7 @@ Ce dossier contient les résumés de chaque conversation importante entre l'util
 | 2 | [conv_02_sidebar-csfloat-agregateurs.md](conv_02_sidebar-csfloat-agregateurs.md) | 12 août 2026 | Refonte barre latérale CSFloat (Float/Wear séparés + nouveaux filtres) + recherche agrégateurs API |
 | 3 | [conv_03_lance-projet.md](conv_03_lance-projet.md) | 12 août 2026 | « Lance le projet » — récup contexte + clonage GitHub + lancement serveur port 12000 |
 | 4 | [conv_04_selecteur-devises.md](conv_04_selecteur-devises.md) | 12 août 2026 | Sélecteur de devise (USD) dans la navbar + conversion des prix (indépendant de la source) |
+| 5 | [conv_05_i18n-layout.md](conv_05_i18n-layout.md) | 12 août 2026 | Sélecteur de langue (10) + i18n UI + refonte layout cartes (nom/spécial/état) + couleurs Spécial + dégradés progressifs |
 
 ---
 

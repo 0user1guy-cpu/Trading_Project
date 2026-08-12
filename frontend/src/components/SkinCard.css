@@ -37,12 +37,58 @@
   background-image:
     radial-gradient(ellipse 90% 70% at center 30%, var(--rarity-bg) 0%, transparent 70%),
     linear-gradient(to bottom, var(--rarity-bg) 0%, transparent 45%);
-  height: 150px;
+  /* Zone image agrandie ~20% (150px -> 180px) */
+  height: 180px;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 12px;
   border-bottom: 1px solid var(--rarity-border);
+}
+
+/* Overlay nom + spécial + état en haut-gauche de la zone image */
+.skin-card-overlay-top {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  right: 10px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.skin-card-overlay-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85), 0 0 2px rgba(0, 0, 0, 0.9);
+}
+
+.skin-card-overlay-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.skin-card-special {
+  font-weight: 700;
+}
+
+.skin-card-special-tm {
+  font-size: 7px;
+  vertical-align: super;
+  margin-left: 1px;
+}
+
+.skin-card-overlay-wear {
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 .skin-card-image {
@@ -86,17 +132,16 @@
 }
 
 .skin-card-info {
-  padding: 10px 12px 12px;
+  /* Zone infos réduite ~20% (padding 10/12/12 -> 8/10/10) */
+  padding: 8px 10px 10px;
 }
 
-.skin-card-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 8px;
+.skin-card-float-label {
+  font-size: 10px;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  color: var(--text-secondary);
+  margin-top: 3px;
+  margin-bottom: 6px;
 }
 
 .skin-card-wear-row {
@@ -155,15 +200,11 @@
   height: 5px;
   background: linear-gradient(to right,
     #4b69ff 0%,
-    #4b69ff 10%,
-    #8847ff 15%,
-    #8847ff 38%,
-    #d32ce6 38%,
-    #d32ce6 45%,
-    #ffd700 45%,
-    #ffd700 55%,
-    #ff4500 55%,
-    #ff4500 100%
+    #8847ff 25%,
+    #d32ce6 40%,
+    #ffd700 50%,
+    #ff4500 70%,
+    #eb4b4b 100%
   );
   border-radius: 3px;
 }

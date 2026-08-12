@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { fetchCollections } from '../api'
 import { usePopup, FilterTrigger } from './FilterSection'
+import { useLanguage } from '../contexts/LanguageContext'
 import './CollectionPopup.css'
 
 export default function CollectionPopup({ value, onChange }) {
+  const { t } = useLanguage()
   const { open, setOpen, ref } = usePopup()
   const [collections, setCollections] = useState([])
   const [query, setQuery] = useState('')
@@ -21,8 +23,8 @@ export default function CollectionPopup({ value, onChange }) {
   return (
     <div className="collection-popup-wrap" ref={ref}>
       <FilterTrigger
-        label="Collection"
-        value={value || 'Any'}
+        label={t('filter.collection')}
+        value={value || t('filter.any')}
         onClick={() => setOpen((o) => !o)}
         open={open}
       />
@@ -31,7 +33,7 @@ export default function CollectionPopup({ value, onChange }) {
           <div className="collection-popup-search">
             <input
               type="text"
-              placeholder="Filter collections..."
+              placeholder={t('collection.filterPlaceholder')}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               autoFocus
@@ -43,7 +45,7 @@ export default function CollectionPopup({ value, onChange }) {
               onClick={() => { onChange(null); setOpen(false); setQuery('') }}
             >
               <span className="collection-popup-dot" />
-              <span className="collection-popup-name">Any</span>
+              <span className="collection-popup-name">{t('filter.any')}</span>
             </button>
             {filtered.map((c) => (
               <button
@@ -56,7 +58,7 @@ export default function CollectionPopup({ value, onChange }) {
               </button>
             ))}
             {filtered.length === 0 && (
-              <div className="collection-popup-empty">No matching collection</div>
+              <div className="collection-popup-empty">{t('collection.noMatch')}</div>
             )}
           </div>
         </div>

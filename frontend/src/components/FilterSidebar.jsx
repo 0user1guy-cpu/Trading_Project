@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react'
-import { fetchCategories } from '../api'
 import { useCurrency } from '../contexts/CurrencyContext'
+import { useLanguage } from '../contexts/LanguageContext'
 import RangeSlider from './RangeSlider'
 import WearPopup from './WearPopup'
 import CollectionPopup from './CollectionPopup'
@@ -10,13 +9,13 @@ import SpecialFilter from './SpecialFilter'
 import ListingFilter from './ListingFilter'
 import './FilterSidebar.css'
 
-const SORT_OPTIONS = [
-  { value: 'price_asc', label: 'Price: Low to High' },
-  { value: 'price_desc', label: 'Price: High to Low' },
-  { value: 'name_asc', label: 'Name: A to Z' },
-  { value: 'name_desc', label: 'Name: Z to A' },
-  { value: 'float_asc', label: 'Float: Low to High' },
-  { value: 'float_desc', label: 'Float: High to Low' },
+const SORT_KEYS = [
+  { value: 'price_asc', tKey: 'sort.priceAsc' },
+  { value: 'price_desc', tKey: 'sort.priceDesc' },
+  { value: 'name_asc', tKey: 'sort.nameAsc' },
+  { value: 'name_desc', tKey: 'sort.nameDesc' },
+  { value: 'float_asc', tKey: 'sort.floatAsc' },
+  { value: 'float_desc', tKey: 'sort.floatDesc' },
 ]
 
 // Bornes des presets en USD (devise de base de la DB).
@@ -31,13 +30,7 @@ const MAX_PRICE = 5000
 
 export default function FilterSidebar({ filters, onFilterChange }) {
   const { convert, formatPrice, currency } = useCurrency()
-  const [categories, setCategories] = useState([])
-
-  useEffect(() => {
-    fetchCategories()
-      .then((cats) => setCategories([{ category: 'Tous', count: null }, ...cats]))
-      .catch((e) => console.error('Failed to load categories:', e))
-  }, [])
+  const { t } = useLanguage()
 
   const update = (key, value) => {
     onFilterChange({ ...filters, [key]: value, page: 1 })
@@ -82,11 +75,11 @@ export default function FilterSidebar({ filters, onFilterChange }) {
     <aside className="filter-sidebar">
       {/* Recherche */}
       <div className="filter-section">
-        <div className="filter-section-title">Search</div>
+        <div className="filter-section-title">{t('filter.search')}</div>
         <input
           type="text"
           className="filter-search-input"
-          placeholder="Search for items..."
+          placeholder={t('filter.searchPlaceholder')}
           value={filters.q || ''}
           onChange={(e) => update('q', e.target.value)}
         />
@@ -94,7 +87,7 @@ export default function FilterSidebar({ filters, onFilterChange }) {
 
       {/* Prix — slider style CSFloat avec flèches + inputs */}
       <div className="filter-section">
-        <div className="filter-section-title">Price</div>
+        <div className="filter-section-title">{t('filter.price')}</div>
         <RangeSlider
           variant="price"
           min={0}
@@ -145,7 +138,7 @@ export default function FilterSidebar({ filters, onFilterChange }) {
 
       {/* Float — section séparée avec dégradé couleur + flèches */}
       <div className="filter-section">
-        <div className="filter-section-title">Float</div>
+        <div className="filter-section-title">{t('filter.float')}</div>
         <RangeSlider
           variant="float"
           min={0}
@@ -177,7 +170,7 @@ export default function FilterSidebar({ filters, onFilterChange }) {
 
       {/* Wear — popup initiales aligné sous Float, avec tooltip */}
       <div className="filter-section">
-        <div className="filter-section-title">Wear</div>
+        <div className="filter-section-title">{t('filter.wear')}</div>
         <WearPopup
           value={filters.wear}
           onChange={(w) => update('wear', w)}
@@ -226,14 +219,14 @@ export default function FilterSidebar({ filters, onFilterChange }) {
 
       {/* Tri */}
       <div className="filter-section">
-        <div className="filter-section-title">Sort By</div>
+        <div className="filter-section-title">{t('filter.sortBy')}</div>
         <select
           className="filter-sort-select"
           value={filters.sort || 'price_asc'}
           onChange={(e) => update('sort', e.target.value)}
         >
-          {SORT_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          {SORT_KEYS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{t(opt.tKey)}</option>
           ))}
         </select>
       </div>

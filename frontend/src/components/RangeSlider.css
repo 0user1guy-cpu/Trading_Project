@@ -12,15 +12,32 @@
   background: #0d1117;
 }
 
-/* Variante float : les segments colorés sont rendus par le JSX */
+/* Variante float : dégradé progressif officiel CS2 (bleu→rouge). */
 .range-slider-track.float {
-  background: #0d1117;
+  background: linear-gradient(to right,
+    #4b69ff 0%,
+    #8847ff 25%,
+    #d32ce6 40%,
+    #ffd700 50%,
+    #ff4500 70%,
+    #eb4b4b 100%
+  );
 }
 
-/* Variante price : barre sombre unie style CSFloat */
+/* Variante price : barre dorée unie (#FFD700) style CSFloat. */
 .range-slider-track.price {
-  background: #1f2630;
-  border: 1px solid #2d3744;
+  background: #FFD700;
+  border: 1px solid #c9a800;
+}
+
+/* Variante fade : dégradé spécifique demandé pour les motifs Fade. */
+.range-slider-track.fade {
+  background: linear-gradient(to right, #E2B383 0%, #EFA050 25%, #E55C65 50%, #AC4CB0 75%, #6068D3 100%);
+}
+
+/* Variante blue : couleur de fond unie (#2B7FFF). */
+.range-slider-track.blue {
+  background: #2B7FFF;
 }
 
 .range-slider-segment {

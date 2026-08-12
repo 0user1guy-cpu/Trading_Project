@@ -1,4 +1,5 @@
 import { usePopup, FilterTrigger } from './FilterSection'
+import { useLanguage } from '../contexts/LanguageContext'
 import './StickerFilter.css'
 
 const SLOTS = [1, 2, 3, 4, 5]
@@ -9,6 +10,7 @@ const SLOTS = [1, 2, 3, 4, 5]
  * `value` = tableau de 5 valeurs: 'any' | 1..5.
  */
 export default function StickerFilter({ value, onChange }) {
+  const { t } = useLanguage()
   const { open, setOpen, ref } = usePopup()
 
   const updateSlot = (i, val) => {
@@ -23,14 +25,14 @@ export default function StickerFilter({ value, onChange }) {
   return (
     <div className="sticker-filter-wrap" ref={ref}>
       <FilterTrigger
-        label="Stickers"
-        value={activeCount ? `${activeCount} slot${activeCount > 1 ? 's' : ''}` : 'Any Slot'}
+        label={t('filter.stickers')}
+        value={activeCount ? `${activeCount} ${t('sticker.slotLabel')}${activeCount > 1 ? 's' : ''}` : t('filter.anySlot')}
         onClick={() => setOpen((o) => !o)}
         open={open}
       />
       {open && (
         <div className="sticker-filter-popup">
-          <div className="sticker-filter-head">5 emplacements de stickers</div>
+          <div className="sticker-filter-head">5 {t('filter.stickers')}</div>
           {SLOTS.map((slot, i) => (
             <div key={i} className="sticker-row">
               <select
@@ -38,18 +40,18 @@ export default function StickerFilter({ value, onChange }) {
                 value={all[i] || 'any'}
                 onChange={(e) => updateSlot(i, e.target.value === 'any' ? 'any' : parseInt(e.target.value))}
               >
-                <option value="any">N'importe quel emplacement</option>
-                <option value={slot}>Emplacement {slot}</option>
+                <option value="any">{t('sticker.anySlotLabel')}</option>
+                <option value={slot}>{t('sticker.slotLabel')} {slot}</option>
               </select>
               <input
                 type="text"
                 className="sticker-name-input"
-                placeholder="Sticker"
+                placeholder={t('sticker.placeholder')}
               />
             </div>
           ))}
           <div className="sticker-filter-hint">
-            « N'importe quel emplacement » = avec ou sans sticker
+            {t('sticker.hint')}
           </div>
         </div>
       )}

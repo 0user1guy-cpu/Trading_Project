@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
 import { fetchItemDetail, formatFloat } from '../api'
 import { useCurrency } from '../contexts/CurrencyContext'
+import { useLanguage } from '../contexts/LanguageContext'
+import { getSpecialMeta } from './SpecialFilter'
 import './ItemModal.css'
 
 export default function ItemModal({ itemId, onClose }) {
   const { formatPrice } = useCurrency()
+  const { t } = useLanguage()
   const [item, setItem] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -40,8 +43,8 @@ export default function ItemModal({ itemId, onClose }) {
         } : {}}
         onClick={(e) => e.stopPropagation()}
       >
-        {loading && <div className="modal-loading">Loading...</div>}
-        {error && <div className="modal-error">Error: {error}</div>}
+        {loading && <div className="modal-loading">{t('grid.loading')}</div>}
+        {error && <div className="modal-error">{error}</div>}
         {item && (
           <>
             <button className="modal-close" onClick={onClose}>✕</button>
@@ -58,19 +61,19 @@ export default function ItemModal({ itemId, onClose }) {
                 </div>
                 <div className="modal-quick-stats">
                   <div className="modal-stat">
-                    <span className="modal-stat-label">Float</span>
+                    <span className="modal-stat-label">{t('modal.float')}</span>
                     <span className="modal-stat-value">{formatFloat(item.float)}</span>
                   </div>
                   <div className="modal-stat">
-                    <span className="modal-stat-label">Wear</span>
+                    <span className="modal-stat-label">{t('modal.wear')}</span>
                     <span className="modal-stat-value">{item.wear}</span>
                   </div>
                   <div className="modal-stat">
-                    <span className="modal-stat-label">Rarity</span>
+                    <span className="modal-stat-label">{t('modal.rarity')}</span>
                     <span className="modal-stat-value">{item.rarity}</span>
                   </div>
                   <div className="modal-stat">
-                    <span className="modal-stat-label">Platform</span>
+                    <span className="modal-stat-label">{t('modal.platform')}</span>
                     <span className="modal-stat-value">{item.platform}</span>
                   </div>
                 </div>
@@ -88,8 +91,33 @@ export default function ItemModal({ itemId, onClose }) {
               {/* Colonne droite : infos + graphique */}
               <div className="modal-right">
                 <div className="modal-header">
-                  <h2 className="modal-title">{item.name}</h2>
+                  <h2
+                    className="modal-title"
+                    style={
+                      getSpecialMeta(item)
+                        ? {
+                            color: getSpecialMeta(item).color,
+                            textShadow: `0 0 10px ${getSpecialMeta(item).color}, 0 0 18px ${getSpecialMeta(item).color}80`,
+                          }
+                        : undefined
+                    }
+                  >
+                    {item.name}
+                  </h2>
                   <div className="modal-badges">
+                    {getSpecialMeta(item) && (
+                      <span
+                        className="modal-special-badge"
+                        style={{
+                          color: getSpecialMeta(item).color,
+                          boxShadow: `0 0 8px ${getSpecialMeta(item).color}80`,
+                          borderColor: getSpecialMeta(item).color,
+                        }}
+                      >
+                        {t(getSpecialMeta(item).tKey)}
+                        {getSpecialMeta(item).tm ? <sup className="modal-special-tm">™</sup> : null}
+                      </span>
+                    )}
                     <span className={`modal-wear-badge ${item.wear.toLowerCase().replace(/\s/g, '-')}`}>
                       {item.wear}
                     </span>
@@ -100,35 +128,35 @@ export default function ItemModal({ itemId, onClose }) {
                 </div>
 
                 <div className="modal-price-section">
-                  <span className="modal-price-label">Price</span>
+                  <span className="modal-price-label">{t('modal.price')}</span>
                   <span className="modal-price">{formatPrice(item.price)}</span>
                 </div>
 
                 {/* Graphique d'historique de prix */}
                 <div className="modal-chart-section">
-                  <div className="modal-chart-title">Price History (30 days)</div>
-                  <PriceChart data={item.price_history} currentPrice={item.price} formatPrice={formatPrice} />
+                  <div className="modal-chart-title">{t('modal.priceHistory')}</div>
+                  <PriceChart data={item.price_history} currentPrice={item.price} formatPrice={formatPrice} t={t} />
                 </div>
 
                 {/* Boutons d'action */}
                 <div className="modal-actions">
-                  <button className="modal-buy-btn">Buy Now · {formatPrice(item.price)}</button>
-                  <button className="modal-secondary-btn">Add to Cart</button>
+                  <button className="modal-buy-btn">{t('modal.buyNow')} · {formatPrice(item.price)}</button>
+                  <button className="modal-secondary-btn">{t('modal.addToCart')}</button>
                 </div>
 
                 {/* Métadonnées */}
                 <div className="modal-metadata">
                   <div className="modal-meta-row">
-                    <span className="modal-meta-label">Category</span>
+                    <span className="modal-meta-label">{t('modal.category')}</span>
                     <span className="modal-meta-value">{item.category}</span>
                   </div>
                   <div className="modal-meta-row">
-                    <span className="modal-meta-label">Volume</span>
+                    <span className="modal-meta-label">{t('modal.volume')}</span>
                     <span className="modal-meta-value">{item.volume}</span>
                   </div>
                   <div className="modal-meta-row">
-                    <span className="modal-meta-label">Last Updated</span>
-                    <span className="modal-meta-value">{item.updated_at || 'N/A'}</span>
+                    <span className="modal-meta-label">{t('modal.lastUpdated')}</span>
+                    <span className="modal-meta-value">{item.updated_at || t('common.na')}</span>
                   </div>
                 </div>
               </div>
@@ -140,8 +168,8 @@ export default function ItemModal({ itemId, onClose }) {
   )
 }
 
-function PriceChart({ data, currentPrice, formatPrice }) {
-  if (!data || data.length === 0) return <div className="modal-chart-empty">No data</div>
+function PriceChart({ data, currentPrice, formatPrice, t }) {
+  if (!data || data.length === 0) return <div className="modal-chart-empty">{t ? t('modal.noData') : 'No data'}</div>
 
   const prices = data.map((d) => d.price)
   const minP = Math.min(...prices)

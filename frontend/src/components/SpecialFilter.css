@@ -50,4 +50,11 @@
   color: var(--text-secondary);
 }
 
-.special-item.checked .special-label { color: var(--text-primary); font-weight: 500; }
+.special-item.checked .special-label { color: inherit; font-weight: 600; }
+
+.special-tm {
+  font-size: 8px;
+  font-weight: 400;
+  vertical-align: super;
+  margin-left: 1px;
+}
