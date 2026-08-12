@@ -1,3 +1,4 @@
 {
-    "gitdoc.autoPull": "onCommit"
+    "gitdoc.autoPull": "onCommit",
+    "gitdoc.enabled": true
 }

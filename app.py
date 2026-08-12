@@ -294,3 +294,4 @@ elif current == "Data Market":
     market_data.show()
 
 st.markdown("</div>", unsafe_allow_html=True)
+# Test de synchronisation GitDoc
