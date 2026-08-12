@@ -33,6 +33,11 @@ Thumbs.db
 .vscode/
 .idea/
 
+# --- Frontend React (node_modules + build) ---
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
 # --- Logs / caches ---
 *.log
 .pytest_cache/

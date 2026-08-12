@@ -1,0 +1,212 @@
+.skin-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  position: relative;
+}
+
+.skin-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: transparent;
+  border-top-left-radius: var(--radius);
+  border-top-right-radius: var(--radius);
+}
+
+.skin-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  border-color: var(--rarity-border);
+}
+
+.skin-card:hover::before {
+  background: var(--rarity-border);
+}
+
+.skin-card-image-wrap {
+  position: relative;
+  background-color: var(--bg-tertiary);
+  background-image: radial-gradient(circle at center, var(--rarity-bg) 0%, transparent 70%);
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+
+.skin-card-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+}
+
+.skin-card-stickers {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  display: flex;
+  gap: 3px;
+}
+
+.skin-card-sticker-slot {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border);
+}
+
+.skin-card-hover-actions {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.skin-card:hover .skin-card-hover-actions {
+  opacity: 1;
+}
+
+.skin-card-hover-icon {
+  font-size: 14px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+}
+
+.skin-card-info {
+  padding: 10px 12px 12px;
+}
+
+.skin-card-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 8px;
+}
+
+.skin-card-wear-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.skin-card-wear-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.skin-card-wear-badge.factory-new {
+  color: #4b69ff;
+  background-color: rgba(75, 105, 255, 0.15);
+}
+.skin-card-wear-badge.minimal-wear {
+  color: #5e98d9;
+  background-color: rgba(94, 152, 217, 0.15);
+}
+.skin-card-wear-badge.field-tested {
+  color: #8847ff;
+  background-color: rgba(136, 71, 255, 0.15);
+}
+.skin-card-wear-badge.well-worn {
+  color: #d32ce6;
+  background-color: rgba(211, 44, 230, 0.15);
+}
+.skin-card-wear-badge.battle-scarred {
+  color: #ff4500;
+  background-color: rgba(255, 69, 0, 0.15);
+}
+.skin-card-wear-badge.standard {
+  color: var(--text-muted);
+  background-color: var(--bg-tertiary);
+}
+
+.skin-card-float {
+  font-size: 11px;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  color: var(--text-secondary);
+}
+
+.skin-card-float-bar {
+  margin-bottom: 10px;
+}
+
+.skin-card-float-bar-track {
+  position: relative;
+  height: 5px;
+  background: linear-gradient(to right,
+    #4b69ff 0%,
+    #4b69ff 10%,
+    #8847ff 15%,
+    #8847ff 38%,
+    #d32ce6 38%,
+    #d32ce6 45%,
+    #ffd700 45%,
+    #ffd700 55%,
+    #ff4500 55%,
+    #ff4500 100%
+  );
+  border-radius: 3px;
+}
+
+.skin-card-float-bar-marker {
+  position: absolute;
+  top: -2px;
+  width: 2px;
+  height: 9px;
+  background-color: #fff;
+  border-radius: 1px;
+  transform: translateX(-50%);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+}
+
+.skin-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.skin-card-price {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--success);
+}
+
+.skin-card-rarity-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.skin-card-buy-btn {
+  width: 100%;
+  padding: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background-color: var(--accent);
+  border-radius: var(--radius-sm);
+  transition: background-color 0.15s ease;
+}
+
+.skin-card-buy-btn:hover {
+  background-color: var(--accent-hover);
+}
