@@ -9,15 +9,6 @@ import SpecialFilter from './SpecialFilter'
 import ListingFilter from './ListingFilter'
 import './FilterSidebar.css'
 
-const SORT_KEYS = [
-  { value: 'price_asc', tKey: 'sort.priceAsc' },
-  { value: 'price_desc', tKey: 'sort.priceDesc' },
-  { value: 'name_asc', tKey: 'sort.nameAsc' },
-  { value: 'name_desc', tKey: 'sort.nameDesc' },
-  { value: 'float_asc', tKey: 'sort.floatAsc' },
-  { value: 'float_desc', tKey: 'sort.floatDesc' },
-]
-
 // Bornes des presets en USD (devise de base de la DB).
 const PRICE_RANGES_USD = [
   { min: 0, max: 10 },
@@ -215,20 +206,6 @@ export default function FilterSidebar({ filters, onFilterChange }) {
           value={filters.pattern}
           onChange={(p) => update('pattern', p)}
         />
-      </div>
-
-      {/* Tri */}
-      <div className="filter-section">
-        <div className="filter-section-title">{t('filter.sortBy')}</div>
-        <select
-          className="filter-sort-select"
-          value={filters.sort || 'price_asc'}
-          onChange={(e) => update('sort', e.target.value)}
-        >
-          {SORT_KEYS.map((opt) => (
-            <option key={opt.value} value={opt.value}>{t(opt.tKey)}</option>
-          ))}
-        </select>
       </div>
     </aside>
   )

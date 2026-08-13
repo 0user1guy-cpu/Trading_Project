@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { CurrencyProvider } from './contexts/CurrencyContext'
-import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
+import { LanguageProvider } from './contexts/LanguageContext'
 import Navbar from './components/Navbar'
 import CategoryBar from './components/CategoryBar'
 import FilterSidebar from './components/FilterSidebar'
 import MarketGrid from './components/MarketGrid'
+import SavedFilters from './components/SavedFilters'
+import MarketToolbar from './components/MarketToolbar'
 import './App.css'
 
 const DEFAULT_FILTERS = {
@@ -29,10 +31,16 @@ const DEFAULT_FILTERS = {
 export default function App() {
   const [currentPage, setCurrentPage] = useState('market')
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
+  const [view, setView] = useState('all')
+  const [refreshTick, setRefreshTick] = useState(0)
 
   const handleNavigate = (page) => {
     setCurrentPage(page)
   }
+
+  const handleRefresh = useCallback(() => {
+    setRefreshTick((n) => n + 1)
+  }, [])
 
   return (
     <LanguageProvider>
@@ -47,7 +55,21 @@ export default function App() {
                   <div className="market-toolbar">
                     <CategoryBar filters={filters} onFilterChange={setFilters} />
                   </div>
-                  <MarketGrid filters={filters} setFilters={setFilters} />
+                  <div className="market-toolbar-row-wrap">
+                    <SavedFilters filters={filters} onApply={setFilters} />
+                    <MarketToolbar
+                      onRefresh={handleRefresh}
+                      view={view}
+                      onViewChange={setView}
+                      sort={filters.sort}
+                      onSortChange={(s) => setFilters({ ...filters, sort: s, page: 1 })}
+                    />
+                  </div>
+                  <MarketGrid
+                    key={refreshTick}
+                    filters={filters}
+                    setFilters={setFilters}
+                  />
                 </div>
               </>
             ) : (

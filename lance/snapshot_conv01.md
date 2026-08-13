@@ -5,7 +5,7 @@
 > (voir `lance/README.md`) pour recréer le projet à l'identique dans une
 > nouvelle conversation.
 
-**Généré le :** 12 August 2026 à 23:58 UTC  
+**Généré le :** 13 August 2026 à 01:12 UTC  
 **Dépôt :** `0user1guy-cpu/Trading_Project`  
 **Branche source :** `main` (après PR #2 mergée)
 
@@ -1419,13 +1419,15 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 ### `frontend/src/App.jsx`
 
 ```jsx
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { CurrencyProvider } from './contexts/CurrencyContext'
-import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
+import { LanguageProvider } from './contexts/LanguageContext'
 import Navbar from './components/Navbar'
 import CategoryBar from './components/CategoryBar'
 import FilterSidebar from './components/FilterSidebar'
 import MarketGrid from './components/MarketGrid'
+import SavedFilters from './components/SavedFilters'
+import MarketToolbar from './components/MarketToolbar'
 import './App.css'
 
 const DEFAULT_FILTERS = {
@@ -1450,10 +1452,16 @@ const DEFAULT_FILTERS = {
 export default function App() {
   const [currentPage, setCurrentPage] = useState('market')
   const [filters, setFilters] = useState(DEFAULT_FILTERS)
+  const [view, setView] = useState('all')
+  const [refreshTick, setRefreshTick] = useState(0)
 
   const handleNavigate = (page) => {
     setCurrentPage(page)
   }
+
+  const handleRefresh = useCallback(() => {
+    setRefreshTick((n) => n + 1)
+  }, [])
 
   return (
     <LanguageProvider>
@@ -1468,7 +1476,21 @@ export default function App() {
                   <div className="market-toolbar">
                     <CategoryBar filters={filters} onFilterChange={setFilters} />
                   </div>
-                  <MarketGrid filters={filters} setFilters={setFilters} />
+                  <div className="market-toolbar-row-wrap">
+                    <SavedFilters filters={filters} onApply={setFilters} />
+                    <MarketToolbar
+                      onRefresh={handleRefresh}
+                      view={view}
+                      onViewChange={setView}
+                      sort={filters.sort}
+                      onSortChange={(s) => setFilters({ ...filters, sort: s, page: 1 })}
+                    />
+                  </div>
+                  <MarketGrid
+                    key={refreshTick}
+                    filters={filters}
+                    setFilters={setFilters}
+                  />
                 </div>
               </>
             ) : (
@@ -1530,7 +1552,7 @@ export default function App() {
   min-height: 0;
 }
 
-/* Barre d'outils en haut de la page Market (catégories en popup, etc.) */
+/* Barre d'outils en haut de la page Market (catégories scrollable, etc.) */
 .market-toolbar {
   display: flex;
   align-items: center;
@@ -1541,6 +1563,17 @@ export default function App() {
   position: sticky;
   top: 56px;
   z-index: 20;
+  flex-wrap: wrap;
+}
+
+/* Rangée secondaire : 💾 + 🔄 + toggle vue + dropdown tri. */
+.market-toolbar-row-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border);
+  background-color: var(--bg-secondary);
   flex-wrap: wrap;
 }
 ```
@@ -1859,15 +1892,6 @@ import SpecialFilter from './SpecialFilter'
 import ListingFilter from './ListingFilter'
 import './FilterSidebar.css'
 
-const SORT_KEYS = [
-  { value: 'price_asc', tKey: 'sort.priceAsc' },
-  { value: 'price_desc', tKey: 'sort.priceDesc' },
-  { value: 'name_asc', tKey: 'sort.nameAsc' },
-  { value: 'name_desc', tKey: 'sort.nameDesc' },
-  { value: 'float_asc', tKey: 'sort.floatAsc' },
-  { value: 'float_desc', tKey: 'sort.floatDesc' },
-]
-
 // Bornes des presets en USD (devise de base de la DB).
 const PRICE_RANGES_USD = [
   { min: 0, max: 10 },
@@ -2066,20 +2090,6 @@ export default function FilterSidebar({ filters, onFilterChange }) {
           onChange={(p) => update('pattern', p)}
         />
       </div>
-
-      {/* Tri */}
-      <div className="filter-section">
-        <div className="filter-section-title">{t('filter.sortBy')}</div>
-        <select
-          className="filter-sort-select"
-          value={filters.sort || 'price_asc'}
-          onChange={(e) => update('sort', e.target.value)}
-        >
-          {SORT_KEYS.map((opt) => (
-            <option key={opt.value} value={opt.value}>{t(opt.tKey)}</option>
-          ))}
-        </select>
-      </div>
     </aside>
   )
 }
@@ -2089,7 +2099,7 @@ export default function FilterSidebar({ filters, onFilterChange }) {
 
 ```css
 .filter-sidebar {
-  width: 260px;
+  width: 312px;
   flex-shrink: 0;
   background-color: var(--bg-secondary);
   border-right: 1px solid var(--border);
