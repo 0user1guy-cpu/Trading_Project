@@ -74,6 +74,14 @@ Avant de terminer, crée un résumé de la conversation :
 
 ## 🚀 Protocole « lance » — recréer le projet à l'identique
 
+> **Note :** pour démarrer à froid dans un nouveau chat (cloner depuis GitHub
+> main + lire la mémoire + lancer), il existe une **skill permanente**
+> `.agents/skills/lance-projet-github/SKILL.md`, déclenchée par la phrase
+> « lance le projet » (ou variantes). Elle gère le clonage/pull GitHub, la
+> lecture du contexte mémoire, et le lancement. Préférer cette skill pour
+> un démarrage à froid. Le protocole snapshot ci-dessous reste utile pour
+> recréer l'arborescence depuis le blueprint ou en mode offline.
+
 L'utilisateur peut, dans **n'importe quelle nouvelle conversation**, dire :
 
 > **« lance …… »** *(ex: « lance le projet », « lance conv01 », « lance l'interface csfloat »)*
