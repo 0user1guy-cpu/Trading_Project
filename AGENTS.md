@@ -123,3 +123,101 @@ version la plus récente (via le `git pull` automatique du relanceur).
 - `lance/snapshot_conv01.md` — blueprint complet (généré, ne pas éditer à la main).
 - `lance/generer_snapshot.py` — régénère le snapshot depuis les fichiers sources.
 - `lance/relancer.py` — recrée le projet depuis le snapshot (+ install/build/start).
+
+---
+
+## 🔄 Actualisation locale après une modif GitHub (Windows PowerShell)
+
+**À utiliser à chaque fois que l'agent modifie le projet sur GitHub `main`.**
+Le terminal doit déjà viser le dossier du projet (ex: `D:\Trading_Project>`),
+pas besoin de `cd` ni de préciser le nom du projet.
+
+### Étape 1 — Récupérer les changements depuis GitHub
+
+```powershell
+git stash
+git pull origin main
+git stash pop
+```
+
+- `git stash` met de côté tes éventuelles modifs locales (ex: `.vscode/settings.json`)
+  pour éviter qu'elles ne bloquent le pull.
+- `git pull origin main` tire les 5 derniers commits etc.
+- `git stash pop` remet tes modifs locales. Si message « Already up to date » ou pas
+  de conflit → tout va bien. Si « CONFLICT » → garder la version GitHub (voir plus bas).
+
+⚠️ **Si le pull bloque avec « untracked working tree files would be overwritten »**
+(un fichier local non tracké existe aussi sur GitHub, ex: `Icone_App_Streamlit.png`) :
+
+```powershell
+Remove-Item <nom_du_fichier>
+git pull origin main
+```
+
+### Étape 2 — Fermer l'ancien serveur (port 8000)
+
+`python lancer.py` démarre sur le port **8000**. Si un ancien serveur tourne
+encore dessus, le nouveau ne démarre pas (« Address already in use ») et le
+vieux continue d'afficher l'ancienne version. Il faut donc tuer l'ancien :
+
+```powershell
+netstat -ano | findstr :8000
+```
+→ repère le **numéro tout à droite** (le PID, ex: `12345`), puis :
+
+```powershell
+taskkill /PID 12345 /F
+```
+(remplace `12345` par ton vrai PID). Si `netstat` ne renvoie **rien** → le port
+est libre, passe directement à l'étape 3.
+
+### Étape 3 — Rebuild le frontend (si l'UI a changé)
+
+```powershell
+cd frontend
+npm install
+npm run build
+cd ..
+```
+(Inutile si seule l'API a changé, mais à faire par sécurité pour l'UI React.)
+
+### Étape 4 — Relancer le serveur
+
+```powershell
+python lancer.py
+```
+Vérifie le message « ✅ Serveur démarré ! » et l'absence d'erreur
+« Address already in use ».
+
+### Étape 5 — Hard refresh du navigateur
+
+Le navigateur met en cache l'ancien JS/CSS. Ouvre `http://localhost:8000` et fais :
+
+- **`Ctrl + Shift + R`** (ou `Ctrl + F5`)
+
+Pour vider complètement le cache : DevTools (F12) → clic droit sur le bouton
+reload → « Empty Cache and Hard Reload ».
+
+---
+
+### En cas de conflit `git stash pop`
+
+Si tu vois `CONFLICT (content): Merge conflict in ...` au `git stash pop` :
+
+```powershell
+git checkout --theirs .
+git stash drop
+```
+(Garde la version GitHub, abandonne tes modifs locales.)
+
+### En cas de gros souci : tout réaligner sur GitHub
+
+Si rien ne marche et que tu veux juste retrouver exactement la version GitHub :
+
+```powershell
+git fetch origin
+git reset --hard origin/main
+```
+⚠️ **Ça efface TOUTE modif locale non commitée** — mais comme tout est sur GitHub,
+c'est la façon la plus simple de repartir d'une base propre.
+
