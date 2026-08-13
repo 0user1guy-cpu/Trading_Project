@@ -1,0 +1,57 @@
+/* =========================================================================
+   Icônes "outline" épurées pour la barre d'outils (contours only, no fill).
+   Glow blanc diffus émis depuis l'icône au survol/état actif.
+   À réutiliser pour toute nouvelle icône d'outil.
+   ========================================================================= */
+
+.tool-icon {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  display: block;
+}
+
+/* Conteneur de bouton icône outline : transparent, pas de fond. */
+.tool-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.18s ease, border-color 0.18s ease, box-shadow 0.28s ease;
+  flex-shrink: 0;
+}
+
+/* Glow blanc diffus qui part de l'icône au survol / état ouvert. */
+.tool-icon-btn:hover,
+.tool-icon-btn:focus-visible,
+.tool-icon-btn.open {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 0 10px rgba(255, 255, 255, 0.18),
+    0 0 22px rgba(255, 255, 255, 0.10),
+    inset 0 0 8px rgba(255, 255, 255, 0.05);
+}
+
+.tool-icon-btn:focus-visible {
+  outline: none;
+}
+
+/* Animation de rotation pour l'icône actualiser (contour qui tourne). */
+.tool-icon-btn.spinning .tool-icon {
+  animation: tool-icon-spin 0.7s cubic-bezier(0.5, 0, 0.2, 1);
+}
+@keyframes tool-icon-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}

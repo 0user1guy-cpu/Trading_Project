@@ -24,7 +24,6 @@ export default function LanguageSelector() {
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        title="Choisir la langue"
       >
         <span className="language-selector-code">{current.flag} {language}</span>
         <svg

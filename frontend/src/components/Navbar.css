@@ -20,19 +20,31 @@
 .navbar-logo {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   cursor: pointer;
 }
 
-.navbar-logo-text {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.3px;
+/* Icône AK-47 outline doré (SVG inline, contours only, sans fond). */
+.navbar-logo-icon {
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 5px rgba(232, 179, 57, 0.25));
+  transition: filter 0.25s ease;
+}
+.navbar-logo:hover .navbar-logo-icon {
+  filter: drop-shadow(0 0 8px rgba(232, 179, 57, 0.55));
 }
 
+.navbar-logo-text {
+  font-size: 17px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+}
+
+/* "Dream" en jaune doré. */
 .navbar-logo-accent {
-  color: var(--accent);
+  color: #e8b339;
 }
 
 .navbar-links {
@@ -47,12 +59,15 @@
   font-weight: 500;
   color: var(--text-secondary);
   border-radius: var(--radius-sm);
-  transition: all 0.15s ease;
+  transition: color 0.18s ease, background-color 0.18s ease, box-shadow 0.28s ease;
 }
 
 .navbar-link:hover {
-  color: var(--text-primary);
+  color: #ffffff;
   background-color: var(--bg-hover);
+  box-shadow:
+    0 0 10px rgba(255, 255, 255, 0.16),
+    0 0 22px rgba(255, 255, 255, 0.08);
 }
 
 .navbar-link.active {
@@ -76,12 +91,15 @@
   color: var(--text-secondary);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: color 0.18s ease, background-color 0.18s ease, box-shadow 0.28s ease;
 }
 
 .navbar-selector:hover {
-  color: var(--text-primary);
+  color: #ffffff;
   background-color: var(--bg-hover);
+  box-shadow:
+    0 0 10px rgba(255, 255, 255, 0.16),
+    0 0 22px rgba(255, 255, 255, 0.08);
 }
 
 .navbar-selector-value {
@@ -96,10 +114,13 @@
   background-color: var(--bg-tertiary);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  transition: all 0.15s ease;
+  transition: color 0.18s ease, border-color 0.18s ease, box-shadow 0.28s ease;
 }
 
 .navbar-login-btn:hover {
-  background-color: var(--bg-hover);
-  border-color: var(--text-muted);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 0 10px rgba(255, 255, 255, 0.16),
+    0 0 22px rgba(255, 255, 255, 0.08);
 }

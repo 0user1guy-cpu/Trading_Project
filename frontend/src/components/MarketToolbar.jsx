@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useLanguage } from '../contexts/LanguageContext'
+import Tooltip from './Tooltip'
+import './icons.css'
 import './MarketToolbar.css'
 
 /**
@@ -63,14 +65,21 @@ export default function MarketToolbar({ onRefresh, view, onViewChange, sort, onS
 
   return (
     <div className="market-toolbar-row">
-      {/* 🔄 Actualiser */}
-      <button
-        className={`toolbar-icon-btn ${refreshing ? 'spinning' : ''}`}
-        onClick={handleRefresh}
-        title={t('refresh.tooltip')}
-      >
-        <span className="toolbar-emoji">🔄</span>
-      </button>
+      {/* Actualiser — icône outline, glow blanc au survol */}
+      <Tooltip text={t('refresh.tooltip')}>
+        <button
+          className={`tool-icon-btn ${refreshing ? 'spinning' : ''}`}
+          onClick={handleRefresh}
+          aria-label={t('refresh.tooltip')}
+        >
+          <svg className="tool-icon" viewBox="0 0 24 24">
+            <path d="M4 12a8 8 0 0 1 13.66-5.66L20 8" />
+            <path d="M20 4v4h-4" />
+            <path d="M20 12a8 8 0 0 1-13.66 5.66L4 16" />
+            <path d="M4 20v-4h4" />
+          </svg>
+        </button>
+      </Tooltip>
 
       {/* Toggle de vue : Tous les skins / Combos / Objets uniques */}
       <div className="view-toggle">
@@ -79,7 +88,6 @@ export default function MarketToolbar({ onRefresh, view, onViewChange, sort, onS
             key={opt.key}
             className={`view-toggle-btn ${view === opt.key ? 'active' : ''} ${opt.paused ? 'paused' : ''}`}
             onClick={() => !opt.paused && onViewChange(opt.key)}
-            title={opt.paused ? t('toolbar.paused') : ''}
             disabled={opt.paused}
           >
             {t(`view.${opt.key}`)}
@@ -89,20 +97,22 @@ export default function MarketToolbar({ onRefresh, view, onViewChange, sort, onS
 
       {/* Dropdown de tri (chapeau numérique ▾) */}
       <div className="sort-dropdown" ref={sortRef}>
-        <button
-          className={`sort-dropdown-trigger ${sortOpen ? 'open' : ''}`}
-          onClick={() => setSortOpen((o) => !o)}
-          title={t('sort.label')}
-        >
-          <svg className="sort-hat-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 7l9-4 9 4-9 4-9-4z" />
-            <path d="M7 10v5c0 1 2 3 5 3s5-2 5-3v-5" />
-          </svg>
-          <span className="sort-dropdown-label">{t(`sort.${activeSortOption.key}`)}</span>
-          <svg className={`sort-dropdown-chevron ${sortOpen ? 'rotated' : ''}`} width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M7 10l5 5 5-5z" />
-          </svg>
-        </button>
+        <Tooltip text={t('sort.label')}>
+          <button
+            className={`sort-dropdown-trigger ${sortOpen ? 'open' : ''}`}
+            onClick={() => setSortOpen((o) => !o)}
+            aria-label={t('sort.label')}
+          >
+            <svg className="sort-hat-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 7l9-4 9 4-9 4-9-4z" />
+              <path d="M7 10v5c0 1 2 3 5 3s5-2 5-3v-5" />
+            </svg>
+            <span className="sort-dropdown-label">{t(`sort.${activeSortOption.key}`)}</span>
+            <svg className={`sort-dropdown-chevron ${sortOpen ? 'rotated' : ''}`} width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M7 10l5 5 5-5z" />
+            </svg>
+          </button>
+        </Tooltip>
         {sortOpen && (
           <div className="sort-dropdown-menu">
             {SORT_OPTIONS.map((opt) => (
@@ -110,7 +120,6 @@ export default function MarketToolbar({ onRefresh, view, onViewChange, sort, onS
                 key={opt.key}
                 className={`sort-dropdown-item ${sort === opt.value && !opt.paused ? 'active' : ''} ${opt.paused ? 'paused' : ''}`}
                 onClick={() => selectSort(opt)}
-                title={opt.paused ? t('toolbar.paused') : ''}
                 disabled={opt.paused}
               >
                 <span className="sort-dropdown-item-name">{t(`sort.${opt.key}`)}</span>

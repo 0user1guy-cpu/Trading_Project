@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLanguage } from '../contexts/LanguageContext'
+import Tooltip from './Tooltip'
+import './icons.css'
 import './SavedFilters.css'
 
 const STORAGE_KEY = 'tp-saved-filters'
@@ -60,13 +62,17 @@ export default function SavedFilters({ filters, onApply }) {
 
   return (
     <div className="saved-filters" ref={wrapRef}>
-      <button
-        className={`toolbar-icon-btn ${open ? 'open' : ''}`}
-        onClick={() => setOpen((o) => !o)}
-        title={t('save.title')}
-      >
-        <span className="toolbar-emoji">💾</span>
-      </button>
+      <Tooltip text={t('save.title')}>
+        <button
+          className={`tool-icon-btn ${open ? 'open' : ''}`}
+          onClick={() => setOpen((o) => !o)}
+          aria-label={t('save.title')}
+        >
+          <svg className="tool-icon" viewBox="0 0 24 24">
+            <path d="M6 4h12v16l-6-3.5L6 20V4z" />
+          </svg>
+        </button>
+      </Tooltip>
       {open && (
         <div className="saved-filters-popup">
           <div className="saved-filters-title">{t('save.title')}</div>

@@ -18,6 +18,8 @@ Ce dossier contient les résumés de chaque conversation importante entre l'util
 | 5 | [conv_05_i18n-layout.md](conv_05_i18n-layout.md) | 12 août 2026 | Sélecteur de langue (10) + i18n UI + refonte layout cartes (nom/spécial/état) + couleurs Spécial + dégradés progressifs |
 | 6 | [conv_06_toolbar-csfloat.md](conv_06_toolbar-csfloat.md) | 13 août 2026 | Toolbar CSFloat : barre catégories scrollable détachée + 💾 save filters + 🔄 refresh + toggle vue + dropdown tri 10 options (4 actives, 6 pause) |
 | 7 | [conv_07_skill-lance-github.md](conv_07_skill-lance-github.md) | 13 août 2026 | Skill permanente « lance le projet » — déclenchable dans tout nouveau chat, clone/pull GitHub main + lit mémoire + lance le serveur |
+| 8 | [conv_08_refonte-visuelle-icones-glow-tooltips-afatherdream.md](conv_08_refonte-visuelle-icones-glow-tooltips-afatherdream.md) | 13 août 2026 | Refonte visuelle Market : icônes outline (contours, sans fond) + glow blanc diffus au survol + tooltips custom (popup bas centré) + renommage app « AfatherDream » + nouvelle icône/favicon depuis Icone_App_Streamlit.png (fond vert néon #00FF00 retiré) |
+| 9 | [conv_09_icone-ak47-outline-dore.md](conv_09_icone-ak47-outline-dore.md) | 13 août 2026 | Remplacement icône navbar/favicon par AK-47 contours only (sans fond) en jaune doré #e8b339 (couleur « Dream ») + push direct sur main |
 
 ---
 

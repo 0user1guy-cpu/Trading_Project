@@ -23,7 +23,6 @@ export default function CurrencySelector() {
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        title="Choisir la devise"
       >
         <span className="currency-selector-code">{currency}</span>
         <svg

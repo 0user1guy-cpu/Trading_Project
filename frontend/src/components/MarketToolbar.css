@@ -6,41 +6,8 @@
   padding: 0;
 }
 
-/* Bouton icône générique (💾, 🔄) partagé par la barre d'outils. */
-.toolbar-icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: var(--radius-sm);
-  background-color: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  flex-shrink: 0;
-}
-.toolbar-icon-btn:hover,
-.toolbar-icon-btn.open {
-  background-color: var(--bg-hover);
-  border-color: var(--text-muted);
-  color: var(--text-primary);
-}
-
-.toolbar-emoji {
-  font-size: 18px;
-  line-height: 1;
-}
-
-/* Animation de rotation pour le bouton actualiser. */
-.toolbar-icon-btn.spinning .toolbar-emoji {
-  animation: toolbar-spin 0.7s ease;
-}
-@keyframes toolbar-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
+/* (Les boutons icônes outline + glow sont définis dans icons.css :
+   .tool-icon-btn / .tool-icon.) */
 
 /* Toggle de vue (Tous les skins / Combos / Objets uniques). */
 .view-toggle {
@@ -92,13 +59,18 @@
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.12s ease;
+  transition: color 0.18s ease, border-color 0.18s ease, box-shadow 0.28s ease;
 }
 .sort-dropdown-trigger:hover,
 .sort-dropdown-trigger.open {
-  background-color: var(--bg-hover);
-  border-color: var(--text-muted);
-  color: var(--text-primary);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.20);
+  box-shadow:
+    0 0 10px rgba(255, 255, 255, 0.16),
+    0 0 22px rgba(255, 255, 255, 0.09);
+}
+.sort-dropdown-trigger:focus-visible {
+  outline: none;
 }
 .sort-hat-icon {
   color: var(--text-muted);

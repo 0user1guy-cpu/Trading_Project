@@ -11,15 +11,18 @@
   font-weight: 600;
   color: var(--text-secondary);
   background: none;
-  border: none;
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: color 0.18s ease, border-color 0.18s ease, box-shadow 0.28s ease;
 }
 
 .language-selector-button:hover {
-  color: var(--text-primary);
-  background-color: var(--bg-hover);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 0 10px rgba(255, 255, 255, 0.16),
+    0 0 22px rgba(255, 255, 255, 0.08);
 }
 
 .language-selector-code {
