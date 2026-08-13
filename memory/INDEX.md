@@ -16,6 +16,7 @@ Ce dossier contient les résumés de chaque conversation importante entre l'util
 | 3 | [conv_03_lance-projet.md](conv_03_lance-projet.md) | 12 août 2026 | « Lance le projet » — récup contexte + clonage GitHub + lancement serveur port 12000 |
 | 4 | [conv_04_selecteur-devises.md](conv_04_selecteur-devises.md) | 12 août 2026 | Sélecteur de devise (USD) dans la navbar + conversion des prix (indépendant de la source) |
 | 5 | [conv_05_i18n-layout.md](conv_05_i18n-layout.md) | 12 août 2026 | Sélecteur de langue (10) + i18n UI + refonte layout cartes (nom/spécial/état) + couleurs Spécial + dégradés progressifs |
+| 6 | [conv_06_toolbar-csfloat.md](conv_06_toolbar-csfloat.md) | 13 août 2026 | Toolbar CSFloat : barre catégories scrollable détachée + 💾 save filters + 🔄 refresh + toggle vue + dropdown tri 10 options (4 actives, 6 pause) |
 
 ---
 
